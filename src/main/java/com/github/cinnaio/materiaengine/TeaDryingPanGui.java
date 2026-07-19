@@ -1,5 +1,8 @@
 package com.github.cinnaio.materiaengine;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -30,7 +33,7 @@ final class TeaDryingPanGui implements Listener {
     private final NamespacedKey guiItemKey;
     private final Set<Holder> holders = new HashSet<>();
     private String blockId;
-    private String title;
+    private Component title;
     private int processTicks;
     private int inputSlot;
     private int progressSlot;
@@ -42,6 +45,9 @@ final class TeaDryingPanGui implements Listener {
     private List<String> progressItemIds;
     private String outputId;
     private ItemStack outputItem;
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     TeaDryingPanGui(MateriaEnginePlugin plugin) {
         this.plugin = plugin;
@@ -235,12 +241,15 @@ final class TeaDryingPanGui implements Listener {
         return materials;
     }
 
-    private static String parseTitle(String title) {
+    private static Component parseTitle(String title) {
         String parsed = title
                 .replace("<shift:-11>", "")
                 .replace("<image:cgap:tea_drying_pan_gui>", "섀")
                 .replace("대", "섀");
-        return parsed.contains("섀") ? parsed : "섀" + parsed;
+        if (!parsed.contains("섀")) {
+            parsed = "섀" + parsed;
+        }
+        return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
     }
 
     private static void message(org.bukkit.command.CommandSender target, String message) {
