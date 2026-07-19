@@ -1,23 +1,12 @@
 machines:
   tea-drying-pan:
     block-id: cgap:tea_drying_pan
-    title: "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"
+    title: "<white><shift:-8><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"
     process-ticks: 100
     input-slot: 11
     progress-slot: 13
     output-slot: 15
     start-slot: 22
-    allowed-input-ids:
-      - cgap:fresh_tea_leaf
-      - cgap:withered_tea_leaf
-      - cgap:tea_leaf
-    allowed-input-materials:
-      - WHEAT_SEEDS
-      - GREEN_DYE
-      - LIME_DYE
-    allowed-input-names:
-      - "绿茶鲜叶"
-      - "绿茶青叶"
     progress-items:
       - cgap:tea_drying_pan_progress_0
       - cgap:tea_drying_pan_progress_1
@@ -25,7 +14,40 @@ machines:
       - cgap:tea_drying_pan_progress_3
       - cgap:tea_drying_pan_progress_4
       - cgap:tea_drying_pan_progress_5
-    output:
-      id: cgap:green_tea_leaf
-      material: DRIED_KELP
-      name: "绿茶干叶"
+    recipes:
+      green-tea-clear:
+        input:
+          id: cgap:tea_leaf
+          amount: 1
+        conditions:
+          weather: clear
+        process-ticks: 100
+        output:
+          id: cgap:green_tea_leaf
+          amount: 1
+          material: DRIED_KELP
+          name: "晴天绿茶干叶"
+      green-tea-rain:
+        input:
+          id: cgap:tea_leaf
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 120
+        output:
+          id: cgap:green_tea_leaf
+          amount: 1
+          material: DRIED_KELP
+          name: "雨天绿茶干叶"
+      green-tea-thunder:
+        input:
+          id: cgap:tea_leaf
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 140
+        output:
+          id: cgap:green_tea_leaf
+          amount: 1
+          material: DRIED_KELP
+          name: "雷雨绿茶干叶"
