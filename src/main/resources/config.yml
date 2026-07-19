@@ -1,0 +1,31 @@
+machines:
+  tea-drying-pan:
+    block-id: cgap:tea_drying_pan
+    title: "대炒茶（煮饭）锅"
+    process-ticks: 100
+    input-slot: 11
+    progress-slot: 13
+    output-slot: 15
+    start-slot: 22
+    allowed-input-ids:
+      - cgap:fresh_tea_leaf
+      - cgap:withered_tea_leaf
+      - cgap:tea_leaf
+    allowed-input-materials:
+      - WHEAT_SEEDS
+      - GREEN_DYE
+      - LIME_DYE
+    allowed-input-names:
+      - "绿茶鲜叶"
+      - "绿茶青叶"
+    progress-items:
+      - cgap:tea_drying_pan_progress_0
+      - cgap:tea_drying_pan_progress_1
+      - cgap:tea_drying_pan_progress_2
+      - cgap:tea_drying_pan_progress_3
+      - cgap:tea_drying_pan_progress_4
+      - cgap:tea_drying_pan_progress_5
+    output:
+      id: cgap:green_tea_leaf
+      material: DRIED_KELP
+      name: "绿茶干叶"

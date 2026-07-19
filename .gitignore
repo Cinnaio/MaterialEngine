@@ -1,0 +1,20 @@
+.gradle/
+build/
+run/
+resource/
+*.log
+*.tmp
+*.bak
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local server/plugin artifacts
+server/
+plugins/

@@ -1,0 +1,14 @@
+name: MateriaEngine
+version: '${version}'
+main: com.github.cinnaio.materiaengine.MateriaEnginePlugin
+api-version: '1.21'
+folia-supported: true
+authors:
+  - Cinnaio
+description: Machine logic engine for CraftEngine-backed content.
+dependencies:
+  server:
+    CraftEngine:
+      required: false
+      load: BEFORE
+      join-classpath: true
