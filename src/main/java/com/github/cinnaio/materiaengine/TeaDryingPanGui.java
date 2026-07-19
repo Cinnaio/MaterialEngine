@@ -61,7 +61,7 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.title = config.getString("title", "炒茶（煮饭）锅");
+        this.title = parseTitle(config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"));
         this.processTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.progressSlot = config.getInt("progress-slot", 13);
@@ -233,6 +233,14 @@ final class TeaDryingPanGui implements Listener {
             }
         }
         return materials;
+    }
+
+    private static String parseTitle(String title) {
+        String parsed = title
+                .replace("<shift:-11>", "")
+                .replace("<image:cgap:tea_drying_pan_gui>", "섀")
+                .replace("대", "섀");
+        return parsed.contains("섀") ? parsed : "섀" + parsed;
     }
 
     private static void message(org.bukkit.command.CommandSender target, String message) {

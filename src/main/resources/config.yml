@@ -1,7 +1,7 @@
 machines:
   tea-drying-pan:
     block-id: cgap:tea_drying_pan
-    title: "대炒茶（煮饭）锅"
+    title: "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"
     process-ticks: 100
     input-slot: 11
     progress-slot: 13
