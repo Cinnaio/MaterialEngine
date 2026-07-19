@@ -28,26 +28,33 @@ final class TeaDryingPanGui implements Listener {
     private final Plugin plugin;
     private final CraftEngineHook craftEngineHook;
     private final NamespacedKey guiItemKey;
-    private final String blockId;
-    private final String title;
-    private final int processTicks;
-    private final int inputSlot;
-    private final int progressSlot;
-    private final int outputSlot;
-    private final int startSlot;
-    private final Set<Material> allowedInputMaterials;
-    private final Set<String> allowedInputNames;
-    private final Set<String> allowedInputIds;
-    private final List<String> progressItemIds;
-    private final String outputId;
-    private final ItemStack outputItem;
+    private final Set<Holder> holders = new HashSet<>();
+    private String blockId;
+    private String title;
+    private int processTicks;
+    private int inputSlot;
+    private int progressSlot;
+    private int outputSlot;
+    private int startSlot;
+    private Set<Material> allowedInputMaterials;
+    private Set<String> allowedInputNames;
+    private Set<String> allowedInputIds;
+    private List<String> progressItemIds;
+    private String outputId;
+    private ItemStack outputItem;
 
     TeaDryingPanGui(MateriaEnginePlugin plugin) {
         this.plugin = plugin;
         this.craftEngineHook = new CraftEngineHook();
         this.guiItemKey = new NamespacedKey(plugin, "gui_item");
+        reload();
+    }
 
+    void reload() {
         plugin.saveDefaultConfig();
+        if (plugin instanceof org.bukkit.plugin.java.JavaPlugin javaPlugin) {
+            javaPlugin.reloadConfig();
+        }
         ConfigurationSection config = plugin.getConfig().getConfigurationSection("machines.tea-drying-pan");
         if (config == null) {
             throw new IllegalStateException("Missing machines.tea-drying-pan config");
@@ -71,8 +78,20 @@ final class TeaDryingPanGui implements Listener {
         );
     }
 
+    void shutdown() {
+        for (Holder holder : new HashSet<>(holders)) {
+            if (holder.task != null) {
+                holder.task.cancel();
+            }
+        }
+        holders.clear();
+    }
+
     void open(Player player) {
-        Inventory inventory = Bukkit.createInventory(new Holder(), 27, title);
+        Holder holder = new Holder();
+        Inventory inventory = Bukkit.createInventory(holder, 27, title);
+        holder.inventory = inventory;
+        holders.add(holder);
         render(inventory, false, 0);
         player.openInventory(inventory);
     }
@@ -118,8 +137,11 @@ final class TeaDryingPanGui implements Listener {
 
     @EventHandler
     void onClose(InventoryCloseEvent event) {
-        if (event.getInventory().getHolder() instanceof Holder holder && holder.task != null) {
-            holder.task.cancel();
+        if (event.getInventory().getHolder() instanceof Holder holder) {
+            if (holder.task != null) {
+                holder.task.cancel();
+            }
+            holders.remove(holder);
         }
     }
 
@@ -218,13 +240,14 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private static final class Holder implements InventoryHolder {
+        private Inventory inventory;
         private boolean running;
         private int elapsed;
         private BukkitTask task;
 
         @Override
         public Inventory getInventory() {
-            throw new UnsupportedOperationException();
+            return inventory;
         }
     }
 }
