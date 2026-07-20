@@ -141,7 +141,9 @@ final class TeaDryingPanGui implements Listener {
         if (slot == outputSlot) {
             if (hasItem(event.getCursor())) {
                 event.setCancelled(true);
+                return;
             }
+            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(holder.machine, event.getInventory()));
             return;
         }
         if (slot == inputSlot) {
@@ -210,38 +212,46 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private void start(TeaDryingPanMachine machine, Inventory inventory, org.bukkit.command.CommandSender sender) {
-        ItemStack input = inventory.getItem(inputSlot);
+        syncMachine(inventory);
+        if (!start(machine, sender)) {
+            return;
+        }
+        inventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
+        render(inventory, machine);
+    }
+
+    private boolean start(TeaDryingPanMachine machine, org.bukkit.command.CommandSender sender) {
+        ItemStack input = machine.contents()[inputSlot];
         TeaDryingPanRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
             if (sender != null) {
                 message(sender, "当前原料和天气没有可用配方。");
             }
-            return;
+            return false;
         }
         ItemStack output = createOutputItem(recipe);
         if (input.getAmount() < recipe.inputAmount()) {
             if (sender != null) {
                 message(sender, "原料数量不足。");
             }
-            return;
+            return false;
         }
-        if (!canAccept(inventory.getItem(outputSlot), output)) {
+        if (!canAccept(machine.contents()[outputSlot], output)) {
             if (sender != null) {
                 message(sender, "请先取出产物。");
             }
-            return;
+            return false;
         }
 
         input.setAmount(input.getAmount() - recipe.inputAmount());
         if (input.getAmount() <= 0) {
-            inventory.setItem(inputSlot, null);
+            machine.contents()[inputSlot] = null;
         }
         machine.running(true);
         machine.elapsed(0);
         machine.runningRecipeId(recipe.id());
-        syncMachine(inventory);
-        render(inventory, machine);
         save();
+        return true;
     }
 
     private void tick() {
@@ -269,7 +279,9 @@ final class TeaDryingPanGui implements Listener {
             machine.elapsed(0);
             machine.runningRecipeId(null);
             addOutput(machine, recipe);
+            start(machine, null);
             if (openInventory != null) {
+                openInventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
                 openInventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
                 render(openInventory, machine);
             }
