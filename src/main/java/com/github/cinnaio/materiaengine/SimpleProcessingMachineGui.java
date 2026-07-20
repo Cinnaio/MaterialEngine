@@ -108,9 +108,6 @@ final class SimpleProcessingMachineGui implements Listener {
         if (!craftEngineHook.isCustomBlock(event.getClickedBlock(), blockId)) {
             return;
         }
-        if (craftEngineHook.isCustomItem(event.getItem(), blockId)) {
-            return;
-        }
         event.setCancelled(true);
         openMachine(event.getPlayer(), machineAt(event.getClickedBlock().getLocation()));
     }

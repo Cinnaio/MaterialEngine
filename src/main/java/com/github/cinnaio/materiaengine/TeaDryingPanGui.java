@@ -107,10 +107,6 @@ final class TeaDryingPanGui implements Listener {
         if (!craftEngineHook.isCustomBlock(event.getClickedBlock(), blockId)) {
             return;
         }
-        if (craftEngineHook.isCustomItem(event.getItem(), blockId)) {
-            return;
-        }
-
         event.setCancelled(true);
         TeaDryingPanMachine machine = machineAt(event.getClickedBlock().getLocation());
         openMachine(event.getPlayer(), machine);
