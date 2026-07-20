@@ -58,6 +58,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int defaultState;
     private int filledState;
     private int runningState;
+    private boolean booleanState;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
@@ -92,6 +93,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         }
         this.blockId = config.getString("block-id", "");
         this.stateProperty = config.getString("state-property", "stage");
+        this.booleanState = config.getString("state-type", "int").equalsIgnoreCase("boolean");
         this.defaultState = config.getInt("default-state", 0);
         this.filledState = config.getInt("filled-state", 1);
         this.runningState = config.getInt("running-state", filledState);
@@ -538,7 +540,12 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (world == null) {
             return;
         }
-        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, stateProperty, state(machine));
+        int value = state(machine);
+        if (booleanState) {
+            craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, stateProperty, value != 0);
+            return;
+        }
+        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, stateProperty, value);
     }
 
     private int state(SimpleMachine machine) {

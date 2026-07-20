@@ -180,3 +180,93 @@ machines:
         output:
           id: cgap:deep_fermented_tea_leaf
           amount: 1
+
+  # 茶炉：慢速烘干茶料。
+  tea-stove:
+    block-id: cgap:tea_stove
+    state-property: lit
+    state-type: boolean
+    default-state: 0
+    filled-state: 0
+    running-state: 1
+    process-ticks: 200
+    input-slot: 12
+    output-slot: 14
+    title-update-ticks: 5
+    progress-image-width: 108
+    gui-image-token: <image:cgap:tea_drying_pan_gui>
+    gui-image-char: 섀
+    recipes:
+      broken-to-green:
+        input:
+          id: cgap:broken_tea_leaf
+          amount: 1
+        output:
+          id: cgap:green_tea_leaf
+          amount: 1
+      semi-to-oolong:
+        input:
+          id: cgap:semi_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:oolong_tea_leaf
+          amount: 1
+      full-to-black:
+        input:
+          id: cgap:fully_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:black_tea_leaf
+          amount: 1
+      deep-to-puer:
+        input:
+          id: cgap:deep_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:puer_tea_leaf
+          amount: 1
+
+  # 平底锅：快速烘干茶料。
+  cooking-pan:
+    block-id: cgap:cooking_pan
+    state-property: lit
+    state-type: boolean
+    default-state: 0
+    filled-state: 0
+    running-state: 1
+    process-ticks: 100
+    input-slot: 12
+    output-slot: 14
+    title-update-ticks: 5
+    progress-image-width: 108
+    gui-image-token: <image:cgap:tea_drying_pan_gui>
+    gui-image-char: 섀
+    recipes:
+      broken-to-green:
+        input:
+          id: cgap:broken_tea_leaf
+          amount: 1
+        output:
+          id: cgap:green_tea_leaf
+          amount: 1
+      semi-to-oolong:
+        input:
+          id: cgap:semi_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:oolong_tea_leaf
+          amount: 1
+      full-to-black:
+        input:
+          id: cgap:fully_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:black_tea_leaf
+          amount: 1
+      deep-to-puer:
+        input:
+          id: cgap:deep_fermented_tea_leaf
+          amount: 1
+        output:
+          id: cgap:puer_tea_leaf
+          amount: 1

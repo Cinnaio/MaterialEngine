@@ -27,6 +27,10 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.teapan", "teapans", "tea pan", "teapan"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.barrel", "tea_barrels", "tea barrel", "barrel"));
+        registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
+                "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove"));
+        registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
+                "machines.cooking-pan", "cooking_pans", "cooking pan", "cooking-pan"));
         registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaDryingPanGui, processingMachines, lang));
 
         getLogger().info("MateriaEngine enabled.");
