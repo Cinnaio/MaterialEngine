@@ -50,6 +50,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private final String langPrefix;
     private final Map<String, SimpleMachine> machines;
     private final Map<String, Inventory> openMachines = new HashMap<>();
+    private final Map<String, Inventory> openStorages = new HashMap<>();
     private final Map<String, Integer> renderedProgress = new HashMap<>();
 
     private String blockId;
@@ -112,8 +113,12 @@ public final class SimpleProcessingMachineGui implements Listener {
         for (Inventory inventory : openMachines.values()) {
             syncMachine(inventory);
         }
+        for (Inventory inventory : openStorages.values()) {
+            syncStorage(inventory);
+        }
         save();
         openMachines.clear();
+        openStorages.clear();
         renderedProgress.clear();
     }
 
@@ -130,7 +135,12 @@ public final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         event.setCancelled(true);
-        openMachine(event.getPlayer(), machineAt(event.getClickedBlock().getLocation()));
+        SimpleMachine machine = machineAt(event.getClickedBlock().getLocation());
+        if (event.getPlayer().isSneaking()) {
+            openStorage(event.getPlayer(), machine);
+            return;
+        }
+        openMachine(event.getPlayer(), machine);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -144,12 +154,16 @@ public final class SimpleProcessingMachineGui implements Listener {
             dataStore.delete(key);
             return;
         }
-        Inventory openInventory = openMachines.remove(key);
+        Inventory openInventory = openMachines.get(key);
         if (openInventory != null) {
-            for (HumanEntity viewer : openInventory.getViewers().toArray(HumanEntity[]::new)) {
-                viewer.closeInventory();
-            }
+            syncMachine(openInventory);
         }
+        Inventory openStorage = openStorages.get(key);
+        if (openStorage != null) {
+            syncStorage(openStorage);
+        }
+        closeInventory(openMachines.remove(key));
+        closeInventory(openStorages.remove(key));
         dropStoredItems(event.getBlock().getLocation(), machine.contents());
         dataStore.delete(key);
     }
@@ -158,6 +172,10 @@ public final class SimpleProcessingMachineGui implements Listener {
     void onClick(InventoryClickEvent event) {
         Holder holder = holder(event.getInventory());
         if (holder == null) {
+            return;
+        }
+        if (holder.storage) {
+            handleStorageClick(event);
             return;
         }
         int topSize = event.getInventory().getSize();
@@ -170,11 +188,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         if (slot == outputSlot) {
-            if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
-                event.setCancelled(true);
-                return;
-            }
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            event.setCancelled(true);
             return;
         }
         if (slot == inputSlot) {
@@ -203,6 +217,12 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (holder == null) {
             return;
         }
+        if (holder.storage) {
+            if (event.getRawSlots().contains(inputSlot)) {
+                event.setCancelled(true);
+            }
+            return;
+        }
         for (int slot : event.getRawSlots()) {
             if (slot < event.getInventory().getSize() && slot != inputSlot && MachineItems.hasItem(event.getOldCursor())) {
                 event.setCancelled(true);
@@ -223,20 +243,30 @@ public final class SimpleProcessingMachineGui implements Listener {
     void onClose(InventoryCloseEvent event) {
         Holder holder = holder(event.getInventory());
         if (holder != null) {
-            syncMachine(event.getInventory());
-            openMachines.remove(holder.machine.key());
-            renderedProgress.remove(holder.machine.key());
+            if (holder.storage) {
+                syncStorage(event.getInventory());
+                openStorages.remove(holder.machine.key());
+            } else {
+                syncMachine(event.getInventory());
+                openMachines.remove(holder.machine.key());
+                renderedProgress.remove(holder.machine.key());
+            }
             save();
         }
     }
 
     private void openMachine(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player, 0));
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
-            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
-        }
+        Inventory inventory = Bukkit.createInventory(new Holder(machine, false), StoredMachine.SIZE, title(player, 0));
+        inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
+        player.openInventory(inventory);
+    }
+
+    private void openStorage(Player player, SimpleMachine machine) {
+        Inventory inventory = Bukkit.createInventory(new Holder(machine, true), StoredMachine.SIZE, Component.text("物品栏"));
+        fillStorage(inventory, machine);
+        openStorages.put(machine.key(), inventory);
         player.openInventory(inventory);
     }
 
@@ -296,14 +326,19 @@ public final class SimpleProcessingMachineGui implements Listener {
             machine.running(false);
             machine.elapsed(0);
             machine.runningRecipeId(null);
+            syncOpenStorage(machine);
+            ItemStack output = recipe.createOutput(craftEngineHook);
+            if (!canStore(machine, output)) {
+                dirty = true;
+                continue;
+            }
             consumeInput(machine, recipe);
-            addOutput(machine, recipe);
+            store(machine.contents(), output);
             start(machine, null);
             updateBlockState(machine);
+            refreshOpenStorage(machine);
             if (openInventory != null) {
-                for (int i = 0; i < StoredMachine.SIZE; i++) {
-                    openInventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
-                }
+                openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
                 render(openInventory, machine);
             }
             dirty = true;
@@ -365,6 +400,51 @@ public final class SimpleProcessingMachineGui implements Listener {
         }
     }
 
+    private void handleStorageClick(InventoryClickEvent event) {
+        int topSize = event.getInventory().getSize();
+        int slot = event.getRawSlot();
+        if (event.isShiftClick()) {
+            event.setCancelled(true);
+            return;
+        }
+        if (slot == inputSlot || slot < topSize && event.getClick().isKeyboardClick()) {
+            event.setCancelled(true);
+        }
+    }
+
+    private void syncStorage(Inventory inventory) {
+        Holder holder = holder(inventory);
+        if (holder == null || !holder.storage) {
+            return;
+        }
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            if (i != inputSlot) {
+                holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
+            }
+        }
+        updateBlockState(holder.machine);
+    }
+
+    private void fillStorage(Inventory inventory, SimpleMachine machine) {
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+        }
+    }
+
+    private void syncOpenStorage(SimpleMachine machine) {
+        Inventory storage = openStorages.get(machine.key());
+        if (storage != null) {
+            syncStorage(storage);
+        }
+    }
+
+    private void refreshOpenStorage(SimpleMachine machine) {
+        Inventory storage = openStorages.get(machine.key());
+        if (storage != null) {
+            fillStorage(storage, machine);
+        }
+    }
+
     private void handleShiftClick(InventoryClickEvent event, SimpleMachine machine) {
         event.setCancelled(true);
         if (event.getRawSlot() < event.getInventory().getSize()) {
@@ -412,9 +492,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (holder == null) {
             return;
         }
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
-            holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
-        }
+        holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
         updateBlockState(holder.machine);
     }
 
@@ -589,19 +667,31 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (!(inventory.getHolder() instanceof Holder holder)) {
             return null;
         }
-        return openMachines.get(holder.machine.key()) == inventory ? holder : null;
+        Inventory expected = holder.storage ? openStorages.get(holder.machine.key()) : openMachines.get(holder.machine.key());
+        return expected == inventory ? holder : null;
+    }
+
+    private void closeInventory(Inventory inventory) {
+        if (inventory == null) {
+            return;
+        }
+        for (HumanEntity viewer : inventory.getViewers().toArray(HumanEntity[]::new)) {
+            viewer.closeInventory();
+        }
     }
 
     private final class Holder implements InventoryHolder {
         private final SimpleMachine machine;
+        private final boolean storage;
 
-        private Holder(SimpleMachine machine) {
+        private Holder(SimpleMachine machine, boolean storage) {
             this.machine = machine;
+            this.storage = storage;
         }
 
         @Override
         public Inventory getInventory() {
-            return openMachines.get(machine.key());
+            return storage ? openStorages.get(machine.key()) : openMachines.get(machine.key());
         }
     }
 }
