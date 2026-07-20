@@ -6,6 +6,8 @@ folia-supported: true
 authors:
   - Cinnaio
 description: Machine logic engine for CraftEngine-backed content.
+libraries:
+  - org.xerial:sqlite-jdbc:3.46.1.0
 dependencies:
   server:
     CraftEngine:
