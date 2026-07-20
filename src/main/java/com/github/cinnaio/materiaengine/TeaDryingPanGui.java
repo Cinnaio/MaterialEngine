@@ -241,10 +241,6 @@ final class TeaDryingPanGui implements Listener {
             return false;
         }
 
-        input.setAmount(input.getAmount() - recipe.inputAmount());
-        if (input.getAmount() <= 0) {
-            machine.contents()[inputSlot] = null;
-        }
         machine.running(true);
         machine.elapsed(0);
         machine.runningRecipeId(recipe.id());
@@ -276,6 +272,7 @@ final class TeaDryingPanGui implements Listener {
             machine.running(false);
             machine.elapsed(0);
             machine.runningRecipeId(null);
+            consumeInput(machine, recipe);
             addOutput(machine, recipe);
             start(machine, null);
             if (openInventory != null) {
@@ -293,6 +290,17 @@ final class TeaDryingPanGui implements Listener {
     private void startTicking() {
         // ponytail: one loop is enough for one machine type; split per-region only if Folia load proves it matters.
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+    }
+
+    private void consumeInput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
+        ItemStack input = machine.contents()[inputSlot];
+        if (!hasItem(input)) {
+            return;
+        }
+        input.setAmount(input.getAmount() - recipe.inputAmount());
+        if (input.getAmount() <= 0) {
+            machine.contents()[inputSlot] = null;
+        }
     }
 
     private void addOutput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
@@ -330,11 +338,18 @@ final class TeaDryingPanGui implements Listener {
 
     private void syncAndTryAutoStart(TeaDryingPanMachine machine, Inventory inventory) {
         syncMachine(inventory);
-        if (!machine.running()) {
-            start(machine, inventory, null);
+        if (machine.running()) {
+            TeaDryingPanRecipe recipe = recipes.get(machine.runningRecipeId());
+            if (recipe == null || findRecipe(machine.contents()[inputSlot], Bukkit.getWorld(machine.worldId())) == null) {
+                machine.running(false);
+                machine.elapsed(0);
+                machine.runningRecipeId(null);
+                render(inventory, machine);
+            }
+            save();
             return;
         }
-        save();
+        start(machine, inventory, null);
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
