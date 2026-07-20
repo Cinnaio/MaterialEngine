@@ -4,10 +4,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -25,8 +23,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -38,13 +34,11 @@ final class TeaDryingPanGui implements Listener {
     private final JavaPlugin plugin;
     private final CraftEngineHook craftEngineHook;
     private final TeaDryingPanDataStore dataStore;
-    private final NamespacedKey guiItemKey;
+    private final MateriaEngineLang lang;
     private final Map<String, TeaDryingPanMachine> machines;
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Integer> renderedProgress = new HashMap<>();
     private String blockId;
-    private String titleTemplate;
-    private Component title;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
@@ -59,11 +53,11 @@ final class TeaDryingPanGui implements Listener {
     private static final LegacyComponentSerializer SECTION_SERIALIZER = LegacyComponentSerializer.legacySection();
     private static final int PROGRESS_CHAR_START = 0xE900;
 
-    TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore) {
+    TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore, MateriaEngineLang lang) {
         this.plugin = plugin;
         this.craftEngineHook = craftEngineHook;
         this.dataStore = dataStore;
-        this.guiItemKey = new NamespacedKey(plugin, "gui_item");
+        this.lang = lang;
         this.machines = dataStore.load();
         reload();
         startTicking();
@@ -78,14 +72,12 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.titleTemplate = config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅");
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
         this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
         this.progressImageWidth = config.getInt("progress-image-width", 108);
         this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
-        this.title = parseTitle(titleWithProgress(0));
         this.recipes = loadRecipes(config);
     }
 
@@ -173,7 +165,7 @@ final class TeaDryingPanGui implements Listener {
         if (slot == inputSlot) {
             if (hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
                 event.setCancelled(true);
-                message(event.getWhoClicked(), "这里只能放入炒茶原料。");
+                message(event.getWhoClicked(), "tea-drying-pan.input-only");
                 return;
             }
             Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
@@ -196,7 +188,7 @@ final class TeaDryingPanGui implements Listener {
         }
         if (event.getRawSlots().contains(inputSlot) && !isAllowedInput(event.getOldCursor())) {
             event.setCancelled(true);
-            message(event.getWhoClicked(), "这里只能放入炒茶原料。");
+            message(event.getWhoClicked(), "tea-drying-pan.input-only");
             return;
         }
         if (event.getRawSlots().contains(inputSlot)) {
@@ -215,7 +207,7 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private void openMachine(Player player, TeaDryingPanMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine), TeaDryingPanMachine.SIZE, title);
+        Inventory inventory = Bukkit.createInventory(new Holder(machine), TeaDryingPanMachine.SIZE, title(player, 0));
         inventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
         inventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
         openMachines.put(machine.key(), inventory);
@@ -237,20 +229,20 @@ final class TeaDryingPanGui implements Listener {
         TeaDryingPanRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
             if (sender != null) {
-                message(sender, "当前原料和天气没有可用配方。");
+                message(sender, "tea-drying-pan.no-recipe");
             }
             return false;
         }
         ItemStack output = createOutputItem(recipe);
         if (input.getAmount() < recipe.inputAmount()) {
             if (sender != null) {
-                message(sender, "原料数量不足。");
+                message(sender, "tea-drying-pan.not-enough-input");
             }
             return false;
         }
         if (!canAccept(machine.contents()[outputSlot], output)) {
             if (sender != null) {
-                message(sender, "请先取出产物。");
+                message(sender, "tea-drying-pan.output-blocked");
             }
             return false;
         }
@@ -417,10 +409,9 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private void updateTitle(Inventory inventory, int pixels) {
-        Component newTitle = parseTitle(titleWithProgress(pixels));
-        String legacyTitle = SECTION_SERIALIZER.serialize(newTitle);
         for (HumanEntity viewer : inventory.getViewers()) {
-            viewer.getOpenInventory().setTitle(legacyTitle);
+            Component newTitle = title(viewer instanceof Player player ? player : null, pixels);
+            viewer.getOpenInventory().setTitle(SECTION_SERIALIZER.serialize(newTitle));
         }
     }
 
@@ -435,8 +426,8 @@ final class TeaDryingPanGui implements Listener {
         return Math.max(1, Math.min(progressImageWidth, machine.elapsed() * progressImageWidth / totalTicks));
     }
 
-    private String titleWithProgress(int pixels) {
-        return titleTemplate.replace("{progress}", progressChar(pixels));
+    private Component title(Player player, int pixels) {
+        return parseTitle(lang.text(player, "tea-drying-pan.title").replace("{progress}", progressChar(pixels)));
     }
 
     private String progressChar(int pixels) {
@@ -531,26 +522,6 @@ final class TeaDryingPanGui implements Listener {
         return material == null ? Material.STONE : material;
     }
 
-    private ItemStack guiItem(Material material, String name) {
-        ItemStack item = namedItem(material, name);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.getPersistentDataContainer().set(guiItemKey, PersistentDataType.BYTE, (byte) 1);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
-    private static ItemStack namedItem(Material material, String name) {
-        ItemStack item = new ItemStack(material == null ? Material.STONE : material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ChatColor.RESET + name);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
     private static ItemStack cloneItem(ItemStack item) {
         return item == null ? null : item.clone();
     }
@@ -587,8 +558,8 @@ final class TeaDryingPanGui implements Listener {
                 .replace("&e", "<yellow>");
     }
 
-    private static void message(org.bukkit.command.CommandSender target, String message) {
-        target.sendMessage(ChatColor.GREEN + "[MateriaEngine] " + ChatColor.WHITE + message);
+    private void message(org.bukkit.command.CommandSender target, String key) {
+        target.sendMessage(lang.text(target, key));
     }
 
     private final class Holder implements InventoryHolder {

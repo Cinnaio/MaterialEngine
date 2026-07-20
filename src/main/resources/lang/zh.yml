@@ -1,0 +1,10 @@
+command:
+  reload-success: "§a[MateriaEngine] 配置已重载。"
+  usage-reload: "§e用法: /materiaengine reload"
+
+tea-drying-pan:
+  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>炒茶（煮饭）锅"
+  input-only: "这里只能放入炒茶原料。"
+  no-recipe: "当前原料和天气没有可用配方。"
+  not-enough-input: "原料数量不足。"
+  output-blocked: "请先取出产物。"
