@@ -286,7 +286,7 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         Location location = machine.location(world).add(0.5, 1.05, 0.5);
-        world.spawnParticle(Particle.SMOKE, location, 2, 0.25, 0.12, 0.25, 0.01);
+        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, location, 2, 0.25, 0.12, 0.25, 0.01);
     }
 
     private void consumeInput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
