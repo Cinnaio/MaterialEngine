@@ -39,6 +39,7 @@ final class TeaDryingPanGui implements Listener {
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Integer> renderedProgress = new HashMap<>();
     private String blockId;
+    private String filledProperty;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
@@ -72,6 +73,7 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
+        this.filledProperty = config.getString("filled-property", "filled");
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
@@ -79,6 +81,7 @@ final class TeaDryingPanGui implements Listener {
         this.progressImageWidth = config.getInt("progress-image-width", 108);
         this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
         this.recipes = loadRecipes(config);
+        machines.values().forEach(this::updatePanState);
     }
 
     void shutdown() {
@@ -282,6 +285,7 @@ final class TeaDryingPanGui implements Listener {
             consumeInput(machine, recipe);
             addOutput(machine, recipe);
             start(machine, null);
+            updatePanState(machine);
             if (openInventory != null) {
                 openInventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
                 openInventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
@@ -440,6 +444,16 @@ final class TeaDryingPanGui implements Listener {
         }
         holder.machine.contents()[inputSlot] = cloneItem(inventory.getItem(inputSlot));
         holder.machine.contents()[outputSlot] = cloneItem(inventory.getItem(outputSlot));
+        updatePanState(holder.machine);
+    }
+
+    private void updatePanState(TeaDryingPanMachine machine) {
+        World world = Bukkit.getWorld(machine.worldId());
+        if (world == null) {
+            return;
+        }
+        craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, filledProperty,
+                hasItem(machine.contents()[inputSlot]) || hasItem(machine.contents()[outputSlot]));
     }
 
     private void dropStoredItem(Location location, ItemStack item) {

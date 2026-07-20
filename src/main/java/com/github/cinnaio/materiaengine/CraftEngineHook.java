@@ -2,6 +2,8 @@ package com.github.cinnaio.materiaengine;
 
 import net.momirealms.craftengine.bukkit.api.CraftEngineBlocks;
 import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
+import net.momirealms.craftengine.core.block.ImmutableBlockState;
+import net.momirealms.craftengine.core.block.properties.Property;
 import net.momirealms.craftengine.core.item.ItemBuildContext;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Bukkit;
@@ -70,6 +72,34 @@ final class CraftEngineHook {
         } catch (Throwable error) {
             logApiMismatch(error);
             return null;
+        }
+    }
+
+    boolean setBooleanState(Block block, String id, String propertyName, boolean value) {
+        if (block == null || id == null || id.isBlank() || !isEnabled()) {
+            return false;
+        }
+        try {
+            var custom = CraftEngineBlocks.byId(Key.ce(id));
+            if (custom == null) {
+                return false;
+            }
+            @SuppressWarnings("unchecked")
+            Property<Boolean> property = (Property<Boolean>) custom.getProperty(propertyName);
+            if (property == null) {
+                return false;
+            }
+            ImmutableBlockState state = CraftEngineBlocks.getCustomBlockState(block);
+            if (state == null || !id.equals(getBlockId(block))) {
+                state = custom.defaultState();
+            }
+            if (Boolean.valueOf(value).equals(state.get(property))) {
+                return true;
+            }
+            return CraftEngineBlocks.place(block.getLocation(), state.with(property, value), false);
+        } catch (Throwable error) {
+            logApiMismatch(error);
+            return false;
         }
     }
 

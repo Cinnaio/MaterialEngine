@@ -1,6 +1,7 @@
 machines:
   tea-drying-pan:
     block-id: cgap:tea_drying_pan
+    filled-property: filled
     process-ticks: 100
     input-slot: 11
     output-slot: 15
