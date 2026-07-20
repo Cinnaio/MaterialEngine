@@ -40,7 +40,8 @@ final class TeaDryingPanGui implements Listener {
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Inventory> openStorages = new HashMap<>();
     private String blockId;
-    private String rawTitle;
+    private String staticTitle;
+    private String dynamicTitle;
     private Component title;
     private int defaultProcessTicks;
     private int inputSlot;
@@ -72,13 +73,14 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.rawTitle = config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅");
+        this.staticTitle = config.getString("static-title", config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"));
+        this.dynamicTitle = config.getString("dynamic-title", staticTitle);
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
         this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
         this.progressImageWidth = config.getInt("progress-image-width", 108);
-        this.title = parseTitle(rawTitleWithProgress(progressImagePrefix + 0));
+        this.title = parseTitle(titleWithProgress(0));
         this.recipes = loadRecipes(config);
     }
 
@@ -345,7 +347,7 @@ final class TeaDryingPanGui implements Listener {
 
     private void updateTitle(Inventory inventory, TeaDryingPanMachine machine) {
         int pixels = progressPixels(machine);
-        Component newTitle = parseTitle(rawTitleWithProgress(progressImagePrefix + pixels));
+        Component newTitle = parseTitle(titleWithProgress(pixels));
         String legacyTitle = LEGACY_SERIALIZER.serialize(newTitle);
         for (HumanEntity viewer : inventory.getViewers()) {
             viewer.getOpenInventory().setTitle(legacyTitle);
@@ -363,8 +365,8 @@ final class TeaDryingPanGui implements Listener {
         return Math.max(1, Math.min(progressImageWidth, machine.elapsed() * progressImageWidth / totalTicks));
     }
 
-    private String rawTitleWithProgress(String progressImageId) {
-        return rawTitle.replace("{progress}", "<white><image:" + progressImageId + ">");
+    private String titleWithProgress(int pixels) {
+        return dynamicTitle.replace("{static}", staticTitle).replace("{progress}", "<white><image:" + progressImagePrefix + pixels + ">");
     }
 
     private void syncMachine(Inventory inventory) {

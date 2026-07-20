@@ -1,7 +1,8 @@
 machines:
   tea-drying-pan:
     block-id: cgap:tea_drying_pan
-    title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:143><shift:-170><reset>炒茶（煮饭）锅"
+    static-title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-170><reset>炒茶（煮饭）锅"
+    dynamic-title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:143><shift:-170><reset>炒茶（煮饭）锅"
     process-ticks: 100
     input-slot: 11
     output-slot: 15
