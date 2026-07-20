@@ -487,10 +487,6 @@ final class TeaDryingPanGui implements Listener {
             if (inputId.isBlank() || outputId.isBlank()) {
                 continue;
             }
-            ItemStack fallbackOutput = namedItem(
-                    Material.matchMaterial(recipe.getString("output.material", "DRIED_KELP")),
-                    recipe.getString("output.name", outputId)
-            );
             loaded.put(id, new TeaDryingPanRecipe(
                     id,
                     inputId,
@@ -498,7 +494,6 @@ final class TeaDryingPanGui implements Listener {
                     recipe.getString("conditions.weather", "any").toLowerCase(),
                     recipe.getInt("process-ticks", defaultProcessTicks),
                     outputId,
-                    fallbackOutput,
                     Math.max(1, recipe.getInt("output.amount", 1))
             ));
         }
@@ -506,7 +501,7 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private TeaDryingPanRecipe fallbackRecipe() {
-        return new TeaDryingPanRecipe("", "", 1, "any", defaultProcessTicks, "", new ItemStack(Material.AIR), 1);
+        return new TeaDryingPanRecipe("", "", 1, "any", defaultProcessTicks, "", 1);
     }
 
     private boolean canAccept(ItemStack current, ItemStack incoming) {
@@ -519,9 +514,15 @@ final class TeaDryingPanGui implements Listener {
 
     private ItemStack createOutputItem(TeaDryingPanRecipe recipe) {
         ItemStack custom = craftEngineHook.createItem(recipe.outputId());
-        ItemStack output = custom != null ? custom : recipe.outputItem().clone();
+        ItemStack output = custom != null ? custom : new ItemStack(materialFromId(recipe.outputId()));
         output.setAmount(recipe.outputAmount());
         return output;
+    }
+
+    private static Material materialFromId(String id) {
+        String materialId = id == null ? "" : id.toUpperCase().replace("MINECRAFT:", "");
+        Material material = Material.matchMaterial(materialId);
+        return material == null ? Material.STONE : material;
     }
 
     private ItemStack guiItem(Material material, String name) {

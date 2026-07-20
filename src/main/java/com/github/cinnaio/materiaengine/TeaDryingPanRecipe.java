@@ -1,7 +1,6 @@
 package com.github.cinnaio.materiaengine;
 
 import org.bukkit.World;
-import org.bukkit.inventory.ItemStack;
 
 record TeaDryingPanRecipe(
         String id,
@@ -10,7 +9,6 @@ record TeaDryingPanRecipe(
         String weather,
         int processTicks,
         String outputId,
-        ItemStack outputItem,
         int outputAmount
 ) {
     boolean matches(String itemId, World world) {
