@@ -45,6 +45,9 @@ final class TeaDryingPanGui implements Listener {
     private int inputSlot;
     private int outputSlot;
     private List<Integer> progressSlots;
+    private String progressLeftPrefix;
+    private String progressMidPrefix;
+    private String progressRightPrefix;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -78,6 +81,9 @@ final class TeaDryingPanGui implements Listener {
         if (progressSlots.isEmpty()) {
             this.progressSlots = List.of(config.getInt("progress-slot", 13));
         }
+        this.progressLeftPrefix = config.getString("progress-item-prefix.left", "cgap:tea_progress_left_");
+        this.progressMidPrefix = config.getString("progress-item-prefix.mid", "cgap:tea_progress_mid_");
+        this.progressRightPrefix = config.getString("progress-item-prefix.right", "cgap:tea_progress_right_");
         this.recipes = loadRecipes(config);
     }
 
@@ -341,9 +347,13 @@ final class TeaDryingPanGui implements Listener {
 
         int totalTicks = recipes.getOrDefault(machine.runningRecipeId(), fallbackRecipe()).processTicks();
         int percent = totalTicks == 0 ? 100 : Math.min(100, machine.elapsed() * 100 / totalTicks);
-        int filled = machine.running() ? Math.max(1, percent * progressSlots.size() / 100) : 0;
+        int filledPixels = machine.running() ? Math.max(1, percent * progressWidth() / 100) : 0;
+        int usedPixels = 0;
         for (int i = 0; i < progressSlots.size(); i++) {
-            inventory.setItem(progressSlots.get(i), createProgressItem(i < filled));
+            int width = progressSegmentWidth(i);
+            int segmentPixels = Math.max(0, Math.min(width, filledPixels - usedPixels));
+            inventory.setItem(progressSlots.get(i), createProgressItem(i, segmentPixels));
+            usedPixels += width;
         }
     }
 
@@ -436,8 +446,25 @@ final class TeaDryingPanGui implements Listener {
         return output;
     }
 
-    private ItemStack createProgressItem(boolean filled) {
-        return guiItem(filled ? Material.RED_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE, filled ? "炒制进度" : "等待炒制");
+    private ItemStack createProgressItem(int index, int pixels) {
+        if (pixels <= 0) {
+            return null;
+        }
+        String prefix = index == 0 ? progressLeftPrefix : index == progressSlots.size() - 1 ? progressRightPrefix : progressMidPrefix;
+        ItemStack custom = craftEngineHook.createItem(prefix + pixels);
+        return custom != null ? custom : guiItem(Material.RED_STAINED_GLASS_PANE, "炒制进度");
+    }
+
+    private int progressWidth() {
+        int width = 0;
+        for (int i = 0; i < progressSlots.size(); i++) {
+            width += progressSegmentWidth(i);
+        }
+        return width;
+    }
+
+    private int progressSegmentWidth(int index) {
+        return index == 0 || index == progressSlots.size() - 1 ? 9 : 18;
     }
 
     private ItemStack guiItem(Material material, String name) {
