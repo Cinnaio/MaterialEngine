@@ -30,8 +30,6 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 final class TeaDryingPanGui implements Listener {
     private final JavaPlugin plugin;
@@ -49,14 +47,11 @@ final class TeaDryingPanGui implements Listener {
     private int outputSlot;
     private String progressImagePrefix;
     private int progressImageWidth;
-    private int progressTitleShift;
-    private int progressReturnShift;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
-    private static final Pattern IMAGE_TAG = Pattern.compile("<image:([^>]+)>");
 
     TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore) {
         this.plugin = plugin;
@@ -83,8 +78,6 @@ final class TeaDryingPanGui implements Listener {
         this.outputSlot = config.getInt("output-slot", 15);
         this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
         this.progressImageWidth = config.getInt("progress-image-width", 108);
-        this.progressTitleShift = config.getInt("progress-title-shift", progressImageWidth);
-        this.progressReturnShift = config.getInt("progress-return-shift", progressImageWidth);
         this.title = parseTitle(rawTitleWithProgress(progressImagePrefix + 0));
         this.recipes = loadRecipes(config);
     }
@@ -371,13 +364,7 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private String rawTitleWithProgress(String progressImageId) {
-        Matcher matcher = IMAGE_TAG.matcher(rawTitle);
-        if (!matcher.find()) {
-            return rawTitle + "<image:" + progressImageId + ">";
-        }
-        return rawTitle.substring(0, matcher.end())
-                + "<shift:-" + progressTitleShift + "><white><image:" + progressImageId + "><shift:" + progressReturnShift + ">"
-                + rawTitle.substring(matcher.end());
+        return rawTitle.replace("{progress}", "<white><image:" + progressImageId + ">");
     }
 
     private void syncMachine(Inventory inventory) {
