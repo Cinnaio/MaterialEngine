@@ -10,14 +10,14 @@ tea-drying-pan:
   output-blocked: "Take the output first."
 
 teapan:
-  title: "Tea Pan"
+  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Tea Pan"
   input-only: "Only tea pan ingredients can be placed here."
   no-recipe: "No tea pan recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 barrel:
-  title: "Fermentation Barrel"
+  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Fermentation Barrel"
   input-only: "Only fermentable tea ingredients can be placed here."
   no-recipe: "No fermentation recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."

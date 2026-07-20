@@ -48,6 +48,10 @@ machines:
     process-ticks: 100
     input-slot: 12
     output-slot: 14
+    title-update-ticks: 5
+    progress-image-width: 108
+    gui-image-token: <image:cgap:tea_drying_pan_gui>
+    gui-image-char: 섀
     recipes:
       fresh-to-withered:
         input:
@@ -94,6 +98,10 @@ machines:
     process-ticks: 160
     input-slot: 12
     output-slot: 14
+    title-update-ticks: 5
+    progress-image-width: 108
+    gui-image-token: <image:cgap:tea_drying_pan_gui>
+    gui-image-char: 섀
     recipes:
       broken-to-semi:
         input:

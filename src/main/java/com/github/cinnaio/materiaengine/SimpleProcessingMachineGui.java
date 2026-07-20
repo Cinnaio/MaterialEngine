@@ -2,6 +2,7 @@ package com.github.cinnaio.materiaengine;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -30,6 +31,9 @@ import java.util.Map;
 
 final class SimpleProcessingMachineGui implements Listener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final LegacyComponentSerializer SECTION_SERIALIZER = LegacyComponentSerializer.legacySection();
+    private static final int PROGRESS_CHAR_START = 0xE900;
 
     private final JavaPlugin plugin;
     private final CraftEngineHook craftEngineHook;
@@ -39,6 +43,7 @@ final class SimpleProcessingMachineGui implements Listener {
     private final String langPrefix;
     private final Map<String, SimpleMachine> machines;
     private final Map<String, Inventory> openMachines = new HashMap<>();
+    private final Map<String, Integer> renderedProgress = new HashMap<>();
 
     private String blockId;
     private String stateProperty;
@@ -48,6 +53,10 @@ final class SimpleProcessingMachineGui implements Listener {
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
+    private int progressImageWidth;
+    private int titleUpdateTicks;
+    private String imageToken;
+    private String imageChar;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -81,6 +90,10 @@ final class SimpleProcessingMachineGui implements Listener {
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
+        this.progressImageWidth = config.getInt("progress-image-width", 108);
+        this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
+        this.imageToken = config.getString("gui-image-token", "<image:cgap:tea_drying_pan_gui>");
+        this.imageChar = config.getString("gui-image-char", "섀");
         this.recipes = loadRecipes(config);
         machines.values().forEach(this::updateBlockState);
     }
@@ -94,6 +107,7 @@ final class SimpleProcessingMachineGui implements Listener {
         }
         save();
         openMachines.clear();
+        renderedProgress.clear();
     }
 
     void save() {
@@ -194,16 +208,17 @@ final class SimpleProcessingMachineGui implements Listener {
         if (event.getInventory().getHolder() instanceof Holder holder) {
             syncMachine(event.getInventory());
             openMachines.remove(holder.machine.key());
+            renderedProgress.remove(holder.machine.key());
             save();
         }
     }
 
     private void openMachine(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player));
+        Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player, 0));
         inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
         inventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
         openMachines.put(machine.key(), inventory);
-        render(inventory);
+        render(inventory, machine);
         player.openInventory(inventory);
     }
 
@@ -267,7 +282,7 @@ final class SimpleProcessingMachineGui implements Listener {
             if (openInventory != null) {
                 openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
                 openInventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
-                render(openInventory);
+                render(openInventory, machine);
             }
             dirty = true;
         }
@@ -363,12 +378,37 @@ final class SimpleProcessingMachineGui implements Listener {
         updateBlockState(holder.machine);
     }
 
-    private void render(Inventory inventory) {
+    private void render(Inventory inventory, SimpleMachine machine) {
         for (int i = 0; i < inventory.getSize(); i++) {
             if (i != inputSlot && i != outputSlot) {
                 inventory.clear(i);
             }
         }
+        updateTitle(inventory, machine);
+    }
+
+    private void updateTitle(Inventory inventory, SimpleMachine machine) {
+        int pixels = progressPixels(machine);
+        Integer previous = renderedProgress.get(machine.key());
+        if (previous != null && machine.running() && machine.elapsed() % titleUpdateTicks != 0) {
+            return;
+        }
+        renderedProgress.put(machine.key(), pixels);
+        for (HumanEntity viewer : inventory.getViewers()) {
+            Component newTitle = title(viewer instanceof Player player ? player : null, pixels);
+            viewer.getOpenInventory().setTitle(SECTION_SERIALIZER.serialize(newTitle));
+        }
+    }
+
+    private int progressPixels(SimpleMachine machine) {
+        if (!machine.running()) {
+            return 0;
+        }
+        int totalTicks = recipes.getOrDefault(machine.runningRecipeId(), fallbackRecipe()).processTicks();
+        if (totalTicks == 0) {
+            return progressImageWidth;
+        }
+        return Math.max(1, Math.min(progressImageWidth, machine.elapsed() * progressImageWidth / totalTicks));
     }
 
     private void updateBlockState(SimpleMachine machine) {
@@ -443,9 +483,42 @@ final class SimpleProcessingMachineGui implements Listener {
         return loaded;
     }
 
-    private Component title(Player player) {
-        String text = lang.text(player, langPrefix + ".title");
-        return text.contains("<") ? MINI_MESSAGE.deserialize(text) : Component.text(text);
+    private Component title(Player player, int pixels) {
+        String base = lang.text(player, langPrefix + ".title");
+        String title = base.replace("{progress}", progressChar(pixels));
+        return parseTitle(title);
+    }
+
+    private String progressChar(int pixels) {
+        return new String(Character.toChars(PROGRESS_CHAR_START + pixels));
+    }
+
+    private Component parseTitle(String title) {
+        String parsed = legacyToMiniMessage(title)
+                .replace("<shift:-11>", "")
+                .replace("<shift:-8>", "")
+                .replace(imageToken, imageChar)
+                .replace("대", "" + imageChar);
+        if (!parsed.contains(imageChar)) {
+            parsed = "" + imageChar + parsed;
+        }
+        return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
+    }
+
+    private static String legacyToMiniMessage(String text) {
+        return text
+                .replace("&r", "<reset>")
+                .replace("&f", "<white>")
+                .replace("&7", "<gray>")
+                .replace("&8", "<dark_gray>")
+                .replace("&0", "<black>")
+                .replace("&a", "<green>")
+                .replace("&c", "<red>")
+                .replace("&e", "<yellow>");
+    }
+
+    private SimpleMachineRecipe fallbackRecipe() {
+        return new SimpleMachineRecipe("", "", 1, defaultProcessTicks, "", 1, filledState);
     }
 
     private void message(org.bukkit.command.CommandSender target, String key) {
