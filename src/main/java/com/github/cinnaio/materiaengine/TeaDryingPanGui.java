@@ -53,6 +53,7 @@ final class TeaDryingPanGui implements Listener {
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final int PROGRESS_CHAR_START = 0xE900;
 
     TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore) {
         this.plugin = plugin;
@@ -366,7 +367,11 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private String titleWithProgress(int pixels) {
-        return dynamicTitle.replace("{static}", staticTitle).replace("{progress}", "<white><image:" + progressImagePrefix + pixels + ">");
+        return dynamicTitle.replace("{static}", staticTitle).replace("{progress}", progressChar(pixels));
+    }
+
+    private String progressChar(int pixels) {
+        return new String(Character.toChars(PROGRESS_CHAR_START + pixels));
     }
 
     private void syncMachine(Inventory inventory) {
