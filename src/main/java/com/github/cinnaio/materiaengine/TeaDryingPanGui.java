@@ -8,6 +8,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.HumanEntity;
@@ -262,6 +263,7 @@ final class TeaDryingPanGui implements Listener {
                 continue;
             }
             machine.elapsed(machine.elapsed() + 1);
+            spawnSmoke(machine);
             Inventory openInventory = openMachines.get(machine.key());
             if (openInventory != null) {
                 render(openInventory, machine);
@@ -290,6 +292,18 @@ final class TeaDryingPanGui implements Listener {
     private void startTicking() {
         // ponytail: one loop is enough for one machine type; split per-region only if Folia load proves it matters.
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+    }
+
+    private void spawnSmoke(TeaDryingPanMachine machine) {
+        if (machine.elapsed() % 5 != 0) {
+            return;
+        }
+        World world = Bukkit.getWorld(machine.worldId());
+        if (world == null) {
+            return;
+        }
+        Location location = machine.location(world).add(0.5, 1.05, 0.5);
+        world.spawnParticle(Particle.SMOKE, location, 2, 0.25, 0.12, 0.25, 0.01);
     }
 
     private void consumeInput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
