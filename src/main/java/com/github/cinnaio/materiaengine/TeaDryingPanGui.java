@@ -42,7 +42,8 @@ final class TeaDryingPanGui implements Listener {
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
-    private String progressImagePrefix;
+    private String imageToken;
+    private String imageChar;
     private int progressImageWidth;
     private int titleUpdateTicks;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
@@ -76,9 +77,11 @@ final class TeaDryingPanGui implements Listener {
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
-        this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
-        this.progressImageWidth = config.getInt("progress-image-width", 108);
-        this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
+        MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", "섀", 5, 108);
+        this.imageToken = gui.imageToken();
+        this.imageChar = gui.imageChar();
+        this.progressImageWidth = gui.progressImageWidth();
+        this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.recipes = loadRecipes(config);
         machines.values().forEach(this::updatePanState);
     }
@@ -522,14 +525,14 @@ final class TeaDryingPanGui implements Listener {
         return copy;
     }
 
-    private static Component parseTitle(String title) {
+    private Component parseTitle(String title) {
         String parsed = legacyToMiniMessage(title)
                 .replace("<shift:-11>", "")
                 .replace("<shift:-8>", "")
-                .replace("<image:cgap:tea_drying_pan_gui>", "섀")
-                .replace("대", "섀");
-        if (!parsed.contains("섀")) {
-            parsed = "섀" + parsed;
+                .replace(imageToken, imageChar)
+                .replace("대", "" + imageChar);
+        if (!parsed.contains(imageChar)) {
+            parsed = "" + imageChar + parsed;
         }
         return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
     }
