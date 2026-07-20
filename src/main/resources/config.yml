@@ -194,8 +194,8 @@ machines:
     output-slot: 14
     title-update-ticks: 5
     progress-image-width: 108
-    gui-image-token: <image:cgap:tea_drying_pan_gui>
-    gui-image-char: 섀
+    gui-image-token: <image:cgap:tea_stove_gui>
+    gui-image-char: 섁
     recipes:
       broken-to-green:
         input:
