@@ -39,3 +39,86 @@ machines:
         output:
           id: cgap:green_tea_leaf
           amount: 1
+  teapan:
+    block-id: cgap:teapan
+    state-property: stage
+    default-state: 0
+    filled-state: 1
+    running-state: 1
+    process-ticks: 100
+    input-slot: 12
+    output-slot: 14
+    recipes:
+      fresh-to-withered:
+        input:
+          id: cgap:fresh_tea_leaf
+          amount: 1
+        process-ticks: 100
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf
+          amount: 1
+      withered-to-wet:
+        input:
+          id: cgap:withered_tea_leaf
+          amount: 1
+        process-ticks: 100
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      wet-to-yellow:
+        input:
+          id: cgap:wet_tea_leaf
+          amount: 1
+        process-ticks: 120
+        output-state: 4
+        output:
+          id: cgap:yellow_tea_leaf
+          amount: 1
+      green-to-matcha:
+        input:
+          id: cgap:green_tea_leaf
+          amount: 1
+        process-ticks: 120
+        output-state: 5
+        output:
+          id: cgap:matcha_tea_leaf
+          amount: 1
+  barrel:
+    block-id: cgap:barrel
+    state-property: stage
+    default-state: 0
+    filled-state: 1
+    running-state: 2
+    process-ticks: 160
+    input-slot: 12
+    output-slot: 14
+    recipes:
+      broken-to-semi:
+        input:
+          id: cgap:broken_tea_leaf
+          amount: 1
+        process-ticks: 160
+        output-state: 1
+        output:
+          id: cgap:semi_fermented_tea_leaf
+          amount: 1
+      semi-to-full:
+        input:
+          id: cgap:semi_fermented_tea_leaf
+          amount: 1
+        process-ticks: 180
+        output-state: 3
+        output:
+          id: cgap:fully_fermented_tea_leaf
+          amount: 1
+      full-to-deep:
+        input:
+          id: cgap:fully_fermented_tea_leaf
+          amount: 1
+        process-ticks: 200
+        output-state: 4
+        output:
+          id: cgap:deep_fermented_tea_leaf
+          amount: 1

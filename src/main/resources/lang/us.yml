@@ -8,3 +8,17 @@ tea-drying-pan:
   no-recipe: "No recipe matches the current ingredient and weather."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
+
+teapan:
+  title: "Tea Pan"
+  input-only: "Only tea pan ingredients can be placed here."
+  no-recipe: "No tea pan recipe matches this ingredient."
+  not-enough-input: "Not enough ingredients."
+  output-blocked: "Take the output first."
+
+barrel:
+  title: "Fermentation Barrel"
+  input-only: "Only fermentable tea ingredients can be placed here."
+  no-recipe: "No fermentation recipe matches this ingredient."
+  not-enough-input: "Not enough ingredients."
+  output-blocked: "Take the output first."

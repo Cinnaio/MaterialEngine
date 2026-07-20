@@ -1,0 +1,470 @@
+package com.github.cinnaio.materiaengine;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+final class SimpleProcessingMachineGui implements Listener {
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
+
+    private final JavaPlugin plugin;
+    private final CraftEngineHook craftEngineHook;
+    private final MachineDataStore<SimpleMachine> dataStore;
+    private final MateriaEngineLang lang;
+    private final String configPath;
+    private final String langPrefix;
+    private final Map<String, SimpleMachine> machines;
+    private final Map<String, Inventory> openMachines = new HashMap<>();
+
+    private String blockId;
+    private String stateProperty;
+    private int defaultState;
+    private int filledState;
+    private int runningState;
+    private int defaultProcessTicks;
+    private int inputSlot;
+    private int outputSlot;
+    private Map<String, SimpleMachineRecipe> recipes = Map.of();
+    private BukkitTask tickTask;
+
+    SimpleProcessingMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
+                               String configPath, String table, String description, String langPrefix) {
+        this.plugin = plugin;
+        this.craftEngineHook = craftEngineHook;
+        this.lang = lang;
+        this.configPath = configPath;
+        this.langPrefix = langPrefix;
+        this.dataStore = new MachineDataStore<>(plugin, table, description, row -> new SimpleMachine(
+                row.worldId(), row.x(), row.y(), row.z(), row.contents(), row.running(), row.elapsed(), row.runningRecipeId()
+        ));
+        this.machines = dataStore.load();
+        reload();
+        startTicking();
+    }
+
+    void reload() {
+        plugin.saveDefaultConfig();
+        plugin.reloadConfig();
+        ConfigurationSection config = plugin.getConfig().getConfigurationSection(configPath);
+        if (config == null) {
+            throw new IllegalStateException("Missing " + configPath + " config");
+        }
+        this.blockId = config.getString("block-id", "");
+        this.stateProperty = config.getString("state-property", "stage");
+        this.defaultState = config.getInt("default-state", 0);
+        this.filledState = config.getInt("filled-state", 1);
+        this.runningState = config.getInt("running-state", filledState);
+        this.defaultProcessTicks = config.getInt("process-ticks", 100);
+        this.inputSlot = config.getInt("input-slot", 11);
+        this.outputSlot = config.getInt("output-slot", 15);
+        this.recipes = loadRecipes(config);
+        machines.values().forEach(this::updateBlockState);
+    }
+
+    void shutdown() {
+        if (tickTask != null) {
+            tickTask.cancel();
+        }
+        for (Inventory inventory : openMachines.values()) {
+            syncMachine(inventory);
+        }
+        save();
+        openMachines.clear();
+    }
+
+    void save() {
+        dataStore.save(machines.values());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
+            return;
+        }
+        if (!craftEngineHook.isCustomBlock(event.getClickedBlock(), blockId)) {
+            return;
+        }
+        if (craftEngineHook.isCustomItem(event.getItem(), blockId)) {
+            return;
+        }
+        event.setCancelled(true);
+        openMachine(event.getPlayer(), machineAt(event.getClickedBlock().getLocation()));
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    void onBreak(BlockBreakEvent event) {
+        if (!craftEngineHook.isCustomBlock(event.getBlock(), blockId)) {
+            return;
+        }
+        String key = StoredMachine.key(event.getBlock().getLocation());
+        SimpleMachine machine = machines.remove(key);
+        if (machine == null) {
+            dataStore.delete(key);
+            return;
+        }
+        Inventory openInventory = openMachines.remove(key);
+        if (openInventory != null) {
+            for (HumanEntity viewer : openInventory.getViewers().toArray(HumanEntity[]::new)) {
+                viewer.closeInventory();
+            }
+        }
+        dropStoredItem(event.getBlock().getLocation(), machine.contents()[inputSlot]);
+        dropStoredItem(event.getBlock().getLocation(), machine.contents()[outputSlot]);
+        dataStore.delete(key);
+    }
+
+    @EventHandler
+    void onClick(InventoryClickEvent event) {
+        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
+            return;
+        }
+        int topSize = event.getInventory().getSize();
+        int slot = event.getRawSlot();
+        if (event.isShiftClick()) {
+            handleShiftClick(event, holder.machine);
+            return;
+        }
+        if (slot >= topSize) {
+            return;
+        }
+        if (slot == outputSlot) {
+            if (MachineItems.hasItem(event.getCursor())) {
+                event.setCancelled(true);
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            return;
+        }
+        if (slot == inputSlot) {
+            if (MachineItems.hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
+                event.setCancelled(true);
+                message(event.getWhoClicked(), "input-only");
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    @EventHandler
+    void onDrag(InventoryDragEvent event) {
+        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
+            return;
+        }
+        for (int slot : event.getRawSlots()) {
+            if (slot < event.getInventory().getSize() && slot != inputSlot) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if (event.getRawSlots().contains(inputSlot) && !isAllowedInput(event.getOldCursor())) {
+            event.setCancelled(true);
+            message(event.getWhoClicked(), "input-only");
+            return;
+        }
+        if (event.getRawSlots().contains(inputSlot)) {
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+        }
+    }
+
+    @EventHandler
+    void onClose(InventoryCloseEvent event) {
+        if (event.getInventory().getHolder() instanceof Holder holder) {
+            syncMachine(event.getInventory());
+            openMachines.remove(holder.machine.key());
+            save();
+        }
+    }
+
+    private void openMachine(Player player, SimpleMachine machine) {
+        Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player));
+        inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+        inventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
+        openMachines.put(machine.key(), inventory);
+        render(inventory);
+        player.openInventory(inventory);
+    }
+
+    private boolean start(SimpleMachine machine, org.bukkit.command.CommandSender sender) {
+        ItemStack input = machine.contents()[inputSlot];
+        SimpleMachineRecipe recipe = findRecipe(input);
+        if (recipe == null) {
+            if (sender != null) {
+                message(sender, "no-recipe");
+            }
+            return false;
+        }
+        ItemStack output = recipe.createOutput(craftEngineHook);
+        if (input.getAmount() < recipe.inputAmount()) {
+            if (sender != null) {
+                message(sender, "not-enough-input");
+            }
+            return false;
+        }
+        if (!MachineItems.canAccept(machine.contents()[outputSlot], output)) {
+            if (sender != null) {
+                message(sender, "output-blocked");
+            }
+            return false;
+        }
+        machine.running(true);
+        machine.elapsed(0);
+        machine.runningRecipeId(recipe.id());
+        updateBlockState(machine);
+        save();
+        return true;
+    }
+
+    private void tick() {
+        boolean dirty = false;
+        for (SimpleMachine machine : machines.values()) {
+            if (!machine.running()) {
+                continue;
+            }
+            SimpleMachineRecipe recipe = recipes.get(machine.runningRecipeId());
+            if (recipe == null) {
+                machine.running(false);
+                machine.runningRecipeId(null);
+                updateBlockState(machine);
+                dirty = true;
+                continue;
+            }
+            machine.elapsed(machine.elapsed() + 1);
+            spawnParticle(machine);
+            if (machine.elapsed() < recipe.processTicks()) {
+                continue;
+            }
+            machine.running(false);
+            machine.elapsed(0);
+            machine.runningRecipeId(null);
+            consumeInput(machine, recipe);
+            addOutput(machine, recipe);
+            start(machine, null);
+            updateBlockState(machine);
+            Inventory openInventory = openMachines.get(machine.key());
+            if (openInventory != null) {
+                openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+                openInventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
+                render(openInventory);
+            }
+            dirty = true;
+        }
+        if (dirty) {
+            save();
+        }
+    }
+
+    private void startTicking() {
+        tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
+    }
+
+    private void spawnParticle(SimpleMachine machine) {
+        if (machine.elapsed() % 10 != 0) {
+            return;
+        }
+        World world = Bukkit.getWorld(machine.worldId());
+        if (world == null) {
+            return;
+        }
+        world.spawnParticle(Particle.HAPPY_VILLAGER, machine.location(world).add(0.5, 1.0, 0.5), 1, 0.25, 0.15, 0.25, 0.01);
+    }
+
+    private void consumeInput(SimpleMachine machine, SimpleMachineRecipe recipe) {
+        ItemStack input = machine.contents()[inputSlot];
+        if (!MachineItems.hasItem(input)) {
+            return;
+        }
+        input.setAmount(input.getAmount() - recipe.inputAmount());
+        if (input.getAmount() <= 0) {
+            machine.contents()[inputSlot] = null;
+        }
+    }
+
+    private void addOutput(SimpleMachine machine, SimpleMachineRecipe recipe) {
+        ItemStack output = recipe.createOutput(craftEngineHook);
+        ItemStack current = machine.contents()[outputSlot];
+        if (!MachineItems.hasItem(current)) {
+            machine.contents()[outputSlot] = output;
+            return;
+        }
+        current.setAmount(current.getAmount() + output.getAmount());
+    }
+
+    private void handleShiftClick(InventoryClickEvent event, SimpleMachine machine) {
+        event.setCancelled(true);
+        if (event.getRawSlot() < event.getInventory().getSize()) {
+            return;
+        }
+        ItemStack current = event.getCurrentItem();
+        if (!isAllowedInput(current)) {
+            return;
+        }
+        ItemStack input = event.getInventory().getItem(inputSlot);
+        if (!MachineItems.canAccept(input, current)) {
+            return;
+        }
+        int moved = moveOneStack(current, input, event.getInventory());
+        current.setAmount(current.getAmount() - moved);
+        if (current.getAmount() <= 0) {
+            event.setCurrentItem(null);
+        }
+        syncMachine(event.getInventory());
+        syncAndTryAutoStart(machine, event.getInventory());
+    }
+
+    private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
+        int space = !MachineItems.hasItem(input) ? source.getMaxStackSize() : input.getMaxStackSize() - input.getAmount();
+        int moved = Math.min(source.getAmount(), space);
+        if (!MachineItems.hasItem(input)) {
+            ItemStack copy = source.clone();
+            copy.setAmount(moved);
+            inventory.setItem(inputSlot, copy);
+            return moved;
+        }
+        input.setAmount(input.getAmount() + moved);
+        return moved;
+    }
+
+    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory) {
+        syncMachine(inventory);
+        if (!machine.running()) {
+            start(machine, null);
+        }
+    }
+
+    private void syncMachine(Inventory inventory) {
+        if (!(inventory.getHolder() instanceof Holder holder)) {
+            return;
+        }
+        holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
+        holder.machine.contents()[outputSlot] = MachineItems.cloneItem(inventory.getItem(outputSlot));
+        updateBlockState(holder.machine);
+    }
+
+    private void render(Inventory inventory) {
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (i != inputSlot && i != outputSlot) {
+                inventory.clear(i);
+            }
+        }
+    }
+
+    private void updateBlockState(SimpleMachine machine) {
+        World world = Bukkit.getWorld(machine.worldId());
+        if (world == null) {
+            return;
+        }
+        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, stateProperty, state(machine));
+    }
+
+    private int state(SimpleMachine machine) {
+        if (machine.running()) {
+            return runningState;
+        }
+        SimpleMachineRecipe outputRecipe = recipeByOutput(machine.contents()[outputSlot]);
+        if (outputRecipe != null) {
+            return outputRecipe.outputState();
+        }
+        return MachineItems.hasItem(machine.contents()[inputSlot]) ? filledState : defaultState;
+    }
+
+    private SimpleMachineRecipe recipeByOutput(ItemStack item) {
+        String itemId = craftEngineHook.getItemId(item);
+        if (itemId == null) {
+            return null;
+        }
+        return recipes.values().stream().filter(recipe -> recipe.outputId().equals(itemId)).findFirst().orElse(null);
+    }
+
+    private void dropStoredItem(Location location, ItemStack item) {
+        if (MachineItems.hasItem(item)) {
+            location.getWorld().dropItemNaturally(location, item.clone());
+        }
+    }
+
+    private SimpleMachine machineAt(Location location) {
+        return machines.computeIfAbsent(StoredMachine.key(location), ignored -> SimpleMachine.at(location));
+    }
+
+    private boolean isAllowedInput(ItemStack item) {
+        String itemId = craftEngineHook.getItemId(item);
+        return itemId != null && recipes.values().stream().anyMatch(recipe -> recipe.acceptsInput(itemId));
+    }
+
+    private SimpleMachineRecipe findRecipe(ItemStack input) {
+        String itemId = craftEngineHook.getItemId(input);
+        if (itemId == null) {
+            return null;
+        }
+        return recipes.values().stream()
+                .filter(recipe -> recipe.matches(itemId) && input.getAmount() >= recipe.inputAmount())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Map<String, SimpleMachineRecipe> loadRecipes(ConfigurationSection config) {
+        Map<String, SimpleMachineRecipe> loaded = new LinkedHashMap<>();
+        ConfigurationSection recipesSection = config.getConfigurationSection("recipes");
+        if (recipesSection == null) {
+            return loaded;
+        }
+        for (String id : recipesSection.getKeys(false)) {
+            ConfigurationSection recipeSection = recipesSection.getConfigurationSection(id);
+            if (recipeSection == null) {
+                continue;
+            }
+            SimpleMachineRecipe recipe = SimpleMachineRecipe.load(id, recipeSection, defaultProcessTicks, filledState);
+            if (recipe != null) {
+                loaded.put(id, recipe);
+            }
+        }
+        return loaded;
+    }
+
+    private Component title(Player player) {
+        String text = lang.text(player, langPrefix + ".title");
+        return text.contains("<") ? MINI_MESSAGE.deserialize(text) : Component.text(text);
+    }
+
+    private void message(org.bukkit.command.CommandSender target, String key) {
+        target.sendMessage(lang.text(target, langPrefix + "." + key));
+    }
+
+    private final class Holder implements InventoryHolder {
+        private final SimpleMachine machine;
+
+        private Holder(SimpleMachine machine) {
+            this.machine = machine;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return openMachines.get(machine.key());
+        }
+    }
+}
