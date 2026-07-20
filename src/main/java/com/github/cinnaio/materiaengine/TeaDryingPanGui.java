@@ -39,6 +39,7 @@ final class TeaDryingPanGui implements Listener {
     private final NamespacedKey guiItemKey;
     private final Map<String, TeaDryingPanMachine> machines;
     private final Map<String, Inventory> openMachines = new HashMap<>();
+    private final Map<String, Integer> renderedProgress = new HashMap<>();
     private final Map<String, Inventory> openStorages = new HashMap<>();
     private String blockId;
     private String titleTemplate;
@@ -48,6 +49,7 @@ final class TeaDryingPanGui implements Listener {
     private int outputSlot;
     private String progressImagePrefix;
     private int progressImageWidth;
+    private int titleUpdateTicks;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -81,6 +83,7 @@ final class TeaDryingPanGui implements Listener {
         this.outputSlot = config.getInt("output-slot", 15);
         this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
         this.progressImageWidth = config.getInt("progress-image-width", 108);
+        this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
         this.title = parseTitle(titleWithProgress(0));
         this.recipes = loadRecipes(config);
     }
@@ -97,6 +100,7 @@ final class TeaDryingPanGui implements Listener {
         }
         dataStore.save(machines.values());
         openMachines.clear();
+        renderedProgress.clear();
         openStorages.clear();
     }
 
@@ -184,6 +188,7 @@ final class TeaDryingPanGui implements Listener {
         if (event.getInventory().getHolder() instanceof Holder holder) {
             syncMachine(event.getInventory());
             openMachines.remove(holder.machine.key());
+            renderedProgress.remove(holder.machine.key());
             save();
             return;
         }
@@ -266,7 +271,7 @@ final class TeaDryingPanGui implements Listener {
             spawnSmoke(machine);
             Inventory openInventory = openMachines.get(machine.key());
             if (openInventory != null) {
-                render(openInventory, machine);
+                maybeRender(openInventory, machine);
             }
             if (machine.elapsed() < recipe.processTicks()) {
                 continue;
@@ -379,18 +384,31 @@ final class TeaDryingPanGui implements Listener {
         return moved;
     }
 
+    private void maybeRender(Inventory inventory, TeaDryingPanMachine machine) {
+        int pixels = progressPixels(machine);
+        Integer previous = renderedProgress.get(machine.key());
+        if (previous != null && machine.running() && machine.elapsed() % titleUpdateTicks != 0) {
+            return;
+        }
+        renderedProgress.put(machine.key(), pixels);
+        render(inventory, machine, pixels);
+    }
+
     private void render(Inventory inventory, TeaDryingPanMachine machine) {
+        render(inventory, machine, progressPixels(machine));
+    }
+
+    private void render(Inventory inventory, TeaDryingPanMachine machine, int pixels) {
         for (int i = 0; i < inventory.getSize(); i++) {
             if (i != inputSlot && i != outputSlot) {
                 inventory.clear(i);
             }
         }
 
-        updateTitle(inventory, machine);
+        updateTitle(inventory, pixels);
     }
 
-    private void updateTitle(Inventory inventory, TeaDryingPanMachine machine) {
-        int pixels = progressPixels(machine);
+    private void updateTitle(Inventory inventory, int pixels) {
         Component newTitle = parseTitle(titleWithProgress(pixels));
         String legacyTitle = SECTION_SERIALIZER.serialize(newTitle);
         for (HumanEntity viewer : inventory.getViewers()) {
