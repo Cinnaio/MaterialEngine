@@ -143,8 +143,7 @@ final class SimpleProcessingMachineGui implements Listener {
                 viewer.closeInventory();
             }
         }
-        dropStoredItem(event.getBlock().getLocation(), machine.contents()[inputSlot]);
-        dropStoredItem(event.getBlock().getLocation(), machine.contents()[outputSlot]);
+        dropStoredItems(event.getBlock().getLocation(), machine.contents());
         dataStore.delete(key);
     }
 
@@ -164,7 +163,7 @@ final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         if (slot == outputSlot) {
-            if (MachineItems.hasItem(event.getCursor())) {
+            if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
                 event.setCancelled(true);
                 return;
             }
@@ -172,6 +171,10 @@ final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         if (slot == inputSlot) {
+            if (event.getClick().isKeyboardClick()) {
+                event.setCancelled(true);
+                return;
+            }
             if (MachineItems.hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
                 event.setCancelled(true);
                 message(event.getWhoClicked(), "input-only");
@@ -180,7 +183,11 @@ final class SimpleProcessingMachineGui implements Listener {
             Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
             return;
         }
-        event.setCancelled(true);
+        if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
+            event.setCancelled(true);
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
     }
 
     @EventHandler
@@ -190,7 +197,7 @@ final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         for (int slot : event.getRawSlots()) {
-            if (slot < event.getInventory().getSize() && slot != inputSlot) {
+            if (slot < event.getInventory().getSize() && slot != inputSlot && MachineItems.hasItem(event.getOldCursor())) {
                 event.setCancelled(true);
                 return;
             }
@@ -218,8 +225,9 @@ final class SimpleProcessingMachineGui implements Listener {
 
     private void openMachine(Player player, SimpleMachine machine) {
         Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player, 0));
-        inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
-        inventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+        }
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
         player.openInventory(inventory);
@@ -241,7 +249,7 @@ final class SimpleProcessingMachineGui implements Listener {
             }
             return false;
         }
-        if (!MachineItems.canAccept(machine.contents()[outputSlot], output)) {
+        if (!canStore(machine, output)) {
             if (sender != null) {
                 message(sender, "output-blocked");
             }
@@ -271,6 +279,10 @@ final class SimpleProcessingMachineGui implements Listener {
             }
             machine.elapsed(machine.elapsed() + 1);
             spawnParticle(machine);
+            Inventory openInventory = openMachines.get(machine.key());
+            if (openInventory != null) {
+                updateTitle(openInventory, machine);
+            }
             if (machine.elapsed() < recipe.processTicks()) {
                 continue;
             }
@@ -281,10 +293,10 @@ final class SimpleProcessingMachineGui implements Listener {
             addOutput(machine, recipe);
             start(machine, null);
             updateBlockState(machine);
-            Inventory openInventory = openMachines.get(machine.key());
             if (openInventory != null) {
-                openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
-                openInventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
+                for (int i = 0; i < StoredMachine.SIZE; i++) {
+                    openInventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+                }
                 render(openInventory, machine);
             }
             dirty = true;
@@ -321,13 +333,29 @@ final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void addOutput(SimpleMachine machine, SimpleMachineRecipe recipe) {
-        ItemStack output = recipe.createOutput(craftEngineHook);
-        ItemStack current = machine.contents()[outputSlot];
-        if (!MachineItems.hasItem(current)) {
-            machine.contents()[outputSlot] = output;
-            return;
+        store(machine.contents(), recipe.createOutput(craftEngineHook));
+    }
+
+    private boolean canStore(SimpleMachine machine, ItemStack output) {
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            if (i != inputSlot && MachineItems.canAccept(machine.contents()[i], output)) {
+                return true;
+            }
         }
-        current.setAmount(current.getAmount() + output.getAmount());
+        return false;
+    }
+
+    private void store(ItemStack[] contents, ItemStack output) {
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            if (i != inputSlot && MachineItems.canAccept(contents[i], output)) {
+                if (!MachineItems.hasItem(contents[i])) {
+                    contents[i] = output;
+                    return;
+                }
+                contents[i].setAmount(contents[i].getAmount() + output.getAmount());
+                return;
+            }
+        }
     }
 
     private void handleShiftClick(InventoryClickEvent event, SimpleMachine machine) {
@@ -377,17 +405,13 @@ final class SimpleProcessingMachineGui implements Listener {
         if (holder == null) {
             return;
         }
-        holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
-        holder.machine.contents()[outputSlot] = MachineItems.cloneItem(inventory.getItem(outputSlot));
+        for (int i = 0; i < StoredMachine.SIZE; i++) {
+            holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
+        }
         updateBlockState(holder.machine);
     }
 
     private void render(Inventory inventory, SimpleMachine machine) {
-        for (int i = 0; i < inventory.getSize(); i++) {
-            if (i != inputSlot && i != outputSlot) {
-                inventory.clear(i);
-            }
-        }
         updateTitle(inventory, machine);
     }
 
@@ -427,11 +451,30 @@ final class SimpleProcessingMachineGui implements Listener {
         if (machine.running()) {
             return runningState;
         }
-        SimpleMachineRecipe outputRecipe = recipeByOutput(machine.contents()[outputSlot]);
+        SimpleMachineRecipe outputRecipe = recipeByOutput(machine.contents());
         if (outputRecipe != null) {
             return outputRecipe.outputState();
         }
-        return MachineItems.hasItem(machine.contents()[inputSlot]) ? filledState : defaultState;
+        return hasStoredItem(machine) ? filledState : defaultState;
+    }
+
+    private boolean hasStoredItem(SimpleMachine machine) {
+        for (ItemStack item : machine.contents()) {
+            if (MachineItems.hasItem(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private SimpleMachineRecipe recipeByOutput(ItemStack[] items) {
+        for (ItemStack item : items) {
+            SimpleMachineRecipe recipe = recipeByOutput(item);
+            if (recipe != null) {
+                return recipe;
+            }
+        }
+        return null;
     }
 
     private SimpleMachineRecipe recipeByOutput(ItemStack item) {
@@ -440,6 +483,12 @@ final class SimpleProcessingMachineGui implements Listener {
             return null;
         }
         return recipes.values().stream().filter(recipe -> recipe.outputId().equals(itemId)).findFirst().orElse(null);
+    }
+
+    private void dropStoredItems(Location location, ItemStack[] items) {
+        for (ItemStack item : items) {
+            dropStoredItem(location, item);
+        }
     }
 
     private void dropStoredItem(Location location, ItemStack item) {
