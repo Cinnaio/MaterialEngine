@@ -14,6 +14,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -104,7 +105,7 @@ final class TeaDryingPanGui implements Listener {
         dataStore.save(machines.values());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
             return;
@@ -121,7 +122,7 @@ final class TeaDryingPanGui implements Listener {
         openMachine(event.getPlayer(), machine);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     void onBreak(BlockBreakEvent event) {
         if (!craftEngineHook.isCustomBlock(event.getBlock(), blockId)) {
             return;

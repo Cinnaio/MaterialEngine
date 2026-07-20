@@ -14,3 +14,15 @@ dependencies:
       required: false
       load: BEFORE
       join-classpath: true
+    Residence:
+      required: false
+      load: BEFORE
+      join-classpath: false
+    WorldGuard:
+      required: false
+      load: BEFORE
+      join-classpath: false
+    HuskTowns:
+      required: false
+      load: BEFORE
+      join-classpath: false
