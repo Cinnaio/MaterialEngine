@@ -40,7 +40,6 @@ final class TeaDryingPanGui implements Listener {
     private final Map<String, TeaDryingPanMachine> machines;
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Integer> renderedProgress = new HashMap<>();
-    private final Map<String, Inventory> openStorages = new HashMap<>();
     private String blockId;
     private String titleTemplate;
     private Component title;
@@ -95,13 +94,9 @@ final class TeaDryingPanGui implements Listener {
         for (Inventory inventory : openMachines.values()) {
             syncMachine(inventory);
         }
-        for (Inventory inventory : openStorages.values()) {
-            syncStorage(inventory);
-        }
         dataStore.save(machines.values());
         openMachines.clear();
         renderedProgress.clear();
-        openStorages.clear();
     }
 
     void save() {
@@ -119,10 +114,6 @@ final class TeaDryingPanGui implements Listener {
 
         event.setCancelled(true);
         TeaDryingPanMachine machine = machineAt(event.getClickedBlock().getLocation());
-        if (event.getPlayer().isSneaking()) {
-            openStorage(event.getPlayer(), machine);
-            return;
-        }
         openMachine(event.getPlayer(), machine);
     }
 
@@ -190,12 +181,6 @@ final class TeaDryingPanGui implements Listener {
             openMachines.remove(holder.machine.key());
             renderedProgress.remove(holder.machine.key());
             save();
-            return;
-        }
-        if (event.getInventory().getHolder() instanceof StorageHolder holder) {
-            syncStorage(event.getInventory());
-            openStorages.remove(holder.machine.key());
-            save();
         }
     }
 
@@ -205,13 +190,6 @@ final class TeaDryingPanGui implements Listener {
         inventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
-        player.openInventory(inventory);
-    }
-
-    private void openStorage(Player player, TeaDryingPanMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new StorageHolder(machine), TeaDryingPanMachine.SIZE, Component.text("炒茶锅存储"));
-        inventory.setContents(cloneItems(machine.storageContents()));
-        openStorages.put(machine.key(), inventory);
         player.openInventory(inventory);
     }
 
@@ -443,14 +421,6 @@ final class TeaDryingPanGui implements Listener {
         holder.machine.contents()[outputSlot] = cloneItem(inventory.getItem(outputSlot));
     }
 
-    private void syncStorage(Inventory inventory) {
-        if (!(inventory.getHolder() instanceof StorageHolder holder)) {
-            return;
-        }
-        ItemStack[] contents = cloneItems(inventory.getContents());
-        System.arraycopy(contents, 0, holder.machine.storageContents(), 0, TeaDryingPanMachine.SIZE);
-    }
-
     private TeaDryingPanMachine machineAt(Location location) {
         return machines.computeIfAbsent(TeaDryingPanMachine.key(location), ignored -> TeaDryingPanMachine.at(location));
     }
@@ -595,19 +565,6 @@ final class TeaDryingPanGui implements Listener {
         @Override
         public Inventory getInventory() {
             return openMachines.get(machine.key());
-        }
-    }
-
-    private final class StorageHolder implements InventoryHolder {
-        private final TeaDryingPanMachine machine;
-
-        private StorageHolder(TeaDryingPanMachine machine) {
-            this.machine = machine;
-        }
-
-        @Override
-        public Inventory getInventory() {
-            return openStorages.get(machine.key());
         }
     }
 }

@@ -14,22 +14,20 @@ final class TeaDryingPanMachine {
     private final int y;
     private final int z;
     private final ItemStack[] contents;
-    private final ItemStack[] storageContents;
     private boolean running;
     private int elapsed;
     private String runningRecipeId;
 
     TeaDryingPanMachine(UUID worldId, int x, int y, int z) {
-        this(worldId, x, y, z, new ItemStack[SIZE], new ItemStack[SIZE], false, 0, null);
+        this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null);
     }
 
-    TeaDryingPanMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, ItemStack[] storageContents, boolean running, int elapsed, String runningRecipeId) {
+    TeaDryingPanMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
         this.worldId = worldId;
         this.x = x;
         this.y = y;
         this.z = z;
         this.contents = normalize(contents);
-        this.storageContents = normalize(storageContents);
         this.running = running;
         this.elapsed = Math.max(0, elapsed);
         this.runningRecipeId = runningRecipeId;
@@ -69,10 +67,6 @@ final class TeaDryingPanMachine {
 
     ItemStack[] contents() {
         return contents;
-    }
-
-    ItemStack[] storageContents() {
-        return storageContents;
     }
 
     boolean running() {

@@ -55,7 +55,6 @@ final class TeaDryingPanDataStore {
                         machineSection.getInt("y"),
                         machineSection.getInt("z"),
                         loadItems(machineSection.getList("contents")),
-                        loadItems(machineSection.getList("storage")),
                         machineSection.getBoolean("running"),
                         machineSection.getInt("elapsed"),
                         machineSection.getString("running-recipe")
@@ -80,7 +79,6 @@ final class TeaDryingPanDataStore {
             config.set(path + ".elapsed", machine.elapsed());
             config.set(path + ".running-recipe", machine.runningRecipeId());
             config.set(path + ".contents", Arrays.asList(machine.contents()));
-            config.set(path + ".storage", Arrays.asList(machine.storageContents()));
         }
         try {
             config.save(file);
