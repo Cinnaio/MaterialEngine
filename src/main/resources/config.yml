@@ -3,8 +3,8 @@ machines:
     block-id: cgap:tea_drying_pan
     filled-property: filled
     process-ticks: 100
-    input-slot: 11
-    output-slot: 15
+    input-slot: 12
+    output-slot: 14
     progress-image-prefix: cgap:tea_progress_
     progress-image-width: 108
     title-update-ticks: 5
