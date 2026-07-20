@@ -482,9 +482,18 @@ public final class SimpleProcessingMachineGui implements Listener {
 
     private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory) {
         syncMachine(inventory);
-        if (!machine.running()) {
-            start(machine, null);
+        if (machine.running()) {
+            SimpleMachineRecipe recipe = recipes.get(machine.runningRecipeId());
+            if (recipe == null || findRecipe(machine.contents()[inputSlot]) == null) {
+                machine.running(false);
+                machine.elapsed(0);
+                machine.runningRecipeId(null);
+                render(inventory, machine);
+            }
+            save();
+            return;
         }
+        start(machine, null);
     }
 
     private void syncMachine(Inventory inventory) {
