@@ -5,11 +5,9 @@ machines:
     process-ticks: 100
     input-slot: 11
     output-slot: 15
-    progress-slots: [19, 20, 21, 22, 23, 24, 25]
-    progress-item-prefix:
-      left: cgap:tea_progress_left_
-      mid: cgap:tea_progress_mid_
-      right: cgap:tea_progress_right_
+    progress-image-prefix: cgap:tea_progress_
+    progress-image-width: 108
+    progress-title-shift: 108
     recipes:
       green-tea-clear:
         input:

@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,8 +29,9 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 final class TeaDryingPanGui implements Listener {
     private final JavaPlugin plugin;
@@ -40,19 +42,20 @@ final class TeaDryingPanGui implements Listener {
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Inventory> openStorages = new HashMap<>();
     private String blockId;
+    private String rawTitle;
     private Component title;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
-    private List<Integer> progressSlots;
-    private String progressLeftPrefix;
-    private String progressMidPrefix;
-    private String progressRightPrefix;
+    private String progressImagePrefix;
+    private int progressImageWidth;
+    private int progressTitleShift;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final Pattern IMAGE_TAG = Pattern.compile("<image:([^>]+)>");
 
     TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore) {
         this.plugin = plugin;
@@ -73,17 +76,14 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.title = parseTitle(config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"));
+        this.rawTitle = config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅");
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
-        this.progressSlots = config.getIntegerList("progress-slots");
-        if (progressSlots.isEmpty()) {
-            this.progressSlots = List.of(config.getInt("progress-slot", 13));
-        }
-        this.progressLeftPrefix = config.getString("progress-item-prefix.left", "cgap:tea_progress_left_");
-        this.progressMidPrefix = config.getString("progress-item-prefix.mid", "cgap:tea_progress_mid_");
-        this.progressRightPrefix = config.getString("progress-item-prefix.right", "cgap:tea_progress_right_");
+        this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
+        this.progressImageWidth = config.getInt("progress-image-width", 108);
+        this.progressTitleShift = config.getInt("progress-title-shift", progressImageWidth);
+        this.title = parseTitle(rawTitleWithProgress(progressImagePrefix + 0));
         this.recipes = loadRecipes(config);
     }
 
@@ -198,8 +198,8 @@ final class TeaDryingPanGui implements Listener {
         Inventory inventory = Bukkit.createInventory(new Holder(machine), TeaDryingPanMachine.SIZE, title);
         inventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
         inventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
-        render(inventory, machine);
         openMachines.put(machine.key(), inventory);
+        render(inventory, machine);
         player.openInventory(inventory);
     }
 
@@ -340,21 +340,40 @@ final class TeaDryingPanGui implements Listener {
 
     private void render(Inventory inventory, TeaDryingPanMachine machine) {
         for (int i = 0; i < inventory.getSize(); i++) {
-            if (i != inputSlot && i != outputSlot && !progressSlots.contains(i)) {
+            if (i != inputSlot && i != outputSlot) {
                 inventory.clear(i);
             }
         }
 
-        int totalTicks = recipes.getOrDefault(machine.runningRecipeId(), fallbackRecipe()).processTicks();
-        int percent = totalTicks == 0 ? 100 : Math.min(100, machine.elapsed() * 100 / totalTicks);
-        int filledPixels = machine.running() ? Math.max(1, percent * progressWidth() / 100) : 0;
-        int usedPixels = 0;
-        for (int i = 0; i < progressSlots.size(); i++) {
-            int width = progressSegmentWidth(i);
-            int segmentPixels = Math.max(0, Math.min(width, filledPixels - usedPixels));
-            inventory.setItem(progressSlots.get(i), createProgressItem(i, segmentPixels));
-            usedPixels += width;
+        updateTitle(inventory, machine);
+    }
+
+    private void updateTitle(Inventory inventory, TeaDryingPanMachine machine) {
+        int pixels = progressPixels(machine);
+        Component newTitle = parseTitle(rawTitleWithProgress(progressImagePrefix + pixels));
+        String legacyTitle = LEGACY_SERIALIZER.serialize(newTitle);
+        for (HumanEntity viewer : inventory.getViewers()) {
+            viewer.getOpenInventory().setTitle(legacyTitle);
         }
+    }
+
+    private int progressPixels(TeaDryingPanMachine machine) {
+        if (!machine.running()) {
+            return 0;
+        }
+        int totalTicks = recipes.getOrDefault(machine.runningRecipeId(), fallbackRecipe()).processTicks();
+        if (totalTicks == 0) {
+            return progressImageWidth;
+        }
+        return Math.max(1, Math.min(progressImageWidth, machine.elapsed() * progressImageWidth / totalTicks));
+    }
+
+    private String rawTitleWithProgress(String progressImageId) {
+        Matcher matcher = IMAGE_TAG.matcher(rawTitle);
+        if (!matcher.find()) {
+            return rawTitle + "<image:" + progressImageId + ">";
+        }
+        return rawTitle.substring(0, matcher.end()) + "<shift:-" + progressTitleShift + "><image:" + progressImageId + ">" + rawTitle.substring(matcher.end());
     }
 
     private void syncMachine(Inventory inventory) {
@@ -444,27 +463,6 @@ final class TeaDryingPanGui implements Listener {
         ItemStack output = custom != null ? custom : recipe.outputItem().clone();
         output.setAmount(recipe.outputAmount());
         return output;
-    }
-
-    private ItemStack createProgressItem(int index, int pixels) {
-        if (pixels <= 0) {
-            return null;
-        }
-        String prefix = index == 0 ? progressLeftPrefix : index == progressSlots.size() - 1 ? progressRightPrefix : progressMidPrefix;
-        ItemStack custom = craftEngineHook.createItem(prefix + pixels);
-        return custom != null ? custom : guiItem(Material.RED_STAINED_GLASS_PANE, "炒制进度");
-    }
-
-    private int progressWidth() {
-        int width = 0;
-        for (int i = 0; i < progressSlots.size(); i++) {
-            width += progressSegmentWidth(i);
-        }
-        return width;
-    }
-
-    private int progressSegmentWidth(int index) {
-        return index == 0 || index == progressSlots.size() - 1 ? 9 : 18;
     }
 
     private ItemStack guiItem(Material material, String name) {
