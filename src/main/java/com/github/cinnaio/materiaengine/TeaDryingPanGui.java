@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -111,10 +112,38 @@ final class TeaDryingPanGui implements Listener {
         if (!craftEngineHook.isCustomBlock(event.getClickedBlock(), blockId)) {
             return;
         }
+        if (craftEngineHook.isCustomItem(event.getItem(), blockId)) {
+            return;
+        }
 
         event.setCancelled(true);
         TeaDryingPanMachine machine = machineAt(event.getClickedBlock().getLocation());
         openMachine(event.getPlayer(), machine);
+    }
+
+    @EventHandler
+    void onBreak(BlockBreakEvent event) {
+        if (!craftEngineHook.isCustomBlock(event.getBlock(), blockId)) {
+            return;
+        }
+
+        String key = TeaDryingPanMachine.key(event.getBlock().getLocation());
+        TeaDryingPanMachine machine = machines.remove(key);
+        if (machine == null) {
+            dataStore.delete(key);
+            return;
+        }
+
+        Inventory openInventory = openMachines.remove(key);
+        if (openInventory != null) {
+            for (HumanEntity viewer : openInventory.getViewers().toArray(HumanEntity[]::new)) {
+                viewer.closeInventory();
+            }
+        }
+        renderedProgress.remove(key);
+        dropStoredItem(event.getBlock().getLocation(), machine.contents()[inputSlot]);
+        dropStoredItem(event.getBlock().getLocation(), machine.contents()[outputSlot]);
+        dataStore.delete(key);
     }
 
     @EventHandler
@@ -419,6 +448,12 @@ final class TeaDryingPanGui implements Listener {
         }
         holder.machine.contents()[inputSlot] = cloneItem(inventory.getItem(inputSlot));
         holder.machine.contents()[outputSlot] = cloneItem(inventory.getItem(outputSlot));
+    }
+
+    private void dropStoredItem(Location location, ItemStack item) {
+        if (hasItem(item)) {
+            location.getWorld().dropItemNaturally(location, item.clone());
+        }
     }
 
     private TeaDryingPanMachine machineAt(Location location) {

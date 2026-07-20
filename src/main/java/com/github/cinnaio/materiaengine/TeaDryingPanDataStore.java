@@ -98,6 +98,17 @@ final class TeaDryingPanDataStore {
         }
     }
 
+    void delete(String key) {
+        String sql = "DELETE FROM tea_drying_pans WHERE key = ?";
+        try (Connection connection = connect();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, key);
+            statement.executeUpdate();
+        } catch (SQLException error) {
+            plugin.getLogger().severe("[MateriaEngine] Failed to delete tea drying pan data: " + error.getMessage());
+        }
+    }
+
     private void init() {
         plugin.getDataFolder().mkdirs();
         String sql = """
