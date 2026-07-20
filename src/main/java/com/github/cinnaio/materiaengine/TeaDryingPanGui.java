@@ -40,8 +40,7 @@ final class TeaDryingPanGui implements Listener {
     private final Map<String, Inventory> openMachines = new HashMap<>();
     private final Map<String, Inventory> openStorages = new HashMap<>();
     private String blockId;
-    private String staticTitle;
-    private String dynamicTitle;
+    private String titleTemplate;
     private Component title;
     private int defaultProcessTicks;
     private int inputSlot;
@@ -75,8 +74,7 @@ final class TeaDryingPanGui implements Listener {
         }
 
         this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.staticTitle = config.getString("static-title", config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"));
-        this.dynamicTitle = config.getString("dynamic-title", staticTitle);
+        this.titleTemplate = config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅");
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
@@ -143,7 +141,7 @@ final class TeaDryingPanGui implements Listener {
                 event.setCancelled(true);
                 return;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
             return;
         }
         if (slot == inputSlot) {
@@ -152,7 +150,7 @@ final class TeaDryingPanGui implements Listener {
                 message(event.getWhoClicked(), "这里只能放入炒茶原料。");
                 return;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
             return;
         }
 
@@ -176,7 +174,7 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         if (event.getRawSlots().contains(inputSlot)) {
-            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(((Holder) event.getInventory().getHolder()).machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(((Holder) event.getInventory().getHolder()).machine, event.getInventory()));
         }
     }
 
@@ -327,13 +325,16 @@ final class TeaDryingPanGui implements Listener {
         }
         syncMachine(event.getInventory());
         render(event.getInventory(), machine);
-        tryAutoStart(machine, event.getInventory());
+        syncAndTryAutoStart(machine, event.getInventory());
     }
 
-    private void tryAutoStart(TeaDryingPanMachine machine, Inventory inventory) {
+    private void syncAndTryAutoStart(TeaDryingPanMachine machine, Inventory inventory) {
+        syncMachine(inventory);
         if (!machine.running()) {
             start(machine, inventory, null);
+            return;
         }
+        save();
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
@@ -380,7 +381,7 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private String titleWithProgress(int pixels) {
-        return dynamicTitle.replace("{static}", staticTitle).replace("{progress}", progressChar(pixels));
+        return titleTemplate.replace("{progress}", progressChar(pixels));
     }
 
     private String progressChar(int pixels) {
