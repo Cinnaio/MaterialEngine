@@ -1,4 +1,4 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.util;
 
 import net.momirealms.craftengine.bukkit.api.CraftEngineBlocks;
 import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
@@ -10,20 +10,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 
-final class CraftEngineHook {
+public final class CraftEngineHook {
     private boolean apiMismatchLogged;
 
-    boolean isEnabled() {
+    public boolean isEnabled() {
         var plugin = Bukkit.getPluginManager().getPlugin("CraftEngine");
         return plugin != null && plugin.isEnabled();
     }
 
-    boolean isCustomBlock(Block block, String id) {
+    public boolean isCustomBlock(Block block, String id) {
         String blockId = getBlockId(block);
         return blockId != null && blockId.equals(id);
     }
 
-    String getBlockId(Block block) {
+    public String getBlockId(Block block) {
         if (block == null || !isEnabled()) {
             return null;
         }
@@ -41,12 +41,12 @@ final class CraftEngineHook {
         }
     }
 
-    boolean isCustomItem(ItemStack item, String id) {
+    public boolean isCustomItem(ItemStack item, String id) {
         String itemId = getItemId(item);
         return itemId != null && itemId.equals(id);
     }
 
-    String getItemId(ItemStack item) {
+    public String getItemId(ItemStack item) {
         if (item == null || item.getType().isAir() || !isEnabled()) {
             return null;
         }
@@ -62,7 +62,7 @@ final class CraftEngineHook {
         }
     }
 
-    ItemStack createItem(String id) {
+    public ItemStack createItem(String id) {
         if (id == null || id.isBlank() || !isEnabled()) {
             return null;
         }
@@ -75,11 +75,11 @@ final class CraftEngineHook {
         }
     }
 
-    boolean setBooleanState(Block block, String id, String propertyName, boolean value) {
+    public boolean setBooleanState(Block block, String id, String propertyName, boolean value) {
         return setState(block, id, propertyName, value);
     }
 
-    boolean setIntState(Block block, String id, String propertyName, int value) {
+    public boolean setIntState(Block block, String id, String propertyName, int value) {
         return setState(block, id, propertyName, value);
     }
 

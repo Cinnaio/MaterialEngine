@@ -1,4 +1,4 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.data;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -24,14 +24,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-final class MachineDataStore<T extends StoredMachine> {
+public final class MachineDataStore<T extends StoredMachine> {
     private final JavaPlugin plugin;
     private final File file;
     private final String table;
     private final String description;
     private final Function<Row, T> factory;
 
-    MachineDataStore(JavaPlugin plugin, String table, String description, Function<Row, T> factory) {
+    public MachineDataStore(JavaPlugin plugin, String table, String description, Function<Row, T> factory) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "machines.db");
         this.table = table;
@@ -40,7 +40,7 @@ final class MachineDataStore<T extends StoredMachine> {
         init();
     }
 
-    Map<String, T> load() {
+    public Map<String, T> load() {
         Map<String, T> machines = new LinkedHashMap<>();
         String sql = "SELECT * FROM " + table;
         try (Connection connection = connect();
@@ -71,7 +71,7 @@ final class MachineDataStore<T extends StoredMachine> {
         return machines;
     }
 
-    void save(Collection<T> machines) {
+    public void save(Collection<T> machines) {
         String sql = """
                 INSERT INTO %s(key, world, x, y, z, contents, running, elapsed, running_recipe)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -105,7 +105,7 @@ final class MachineDataStore<T extends StoredMachine> {
         }
     }
 
-    void delete(String key) {
+    public void delete(String key) {
         String sql = "DELETE FROM " + table + " WHERE key = ?";
         try (Connection connection = connect();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -163,6 +163,6 @@ final class MachineDataStore<T extends StoredMachine> {
         }
     }
 
-    record Row(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
+    public record Row(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
     }
 }

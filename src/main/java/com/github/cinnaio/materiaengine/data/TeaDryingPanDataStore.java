@@ -1,14 +1,14 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.data;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
 import java.util.Map;
 
-final class TeaDryingPanDataStore {
+public final class TeaDryingPanDataStore {
     private final MachineDataStore<TeaDryingPanMachine> delegate;
 
-    TeaDryingPanDataStore(JavaPlugin plugin) {
+    public TeaDryingPanDataStore(JavaPlugin plugin) {
         this.delegate = new MachineDataStore<>(plugin, "tea_drying_pans", "tea drying pan", row -> new TeaDryingPanMachine(
                 row.worldId(),
                 row.x(),
@@ -21,15 +21,15 @@ final class TeaDryingPanDataStore {
         ));
     }
 
-    Map<String, TeaDryingPanMachine> load() {
+    public Map<String, TeaDryingPanMachine> load() {
         return delegate.load();
     }
 
-    void save(Collection<TeaDryingPanMachine> machines) {
+    public void save(Collection<TeaDryingPanMachine> machines) {
         delegate.save(machines);
     }
 
-    void delete(String key) {
+    public void delete(String key) {
         delegate.delete(key);
     }
 }

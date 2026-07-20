@@ -1,8 +1,8 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.feature;
 
 import org.bukkit.World;
 
-record TeaDryingPanRecipe(
+public record TeaDryingPanRecipe(
         String id,
         String inputId,
         int inputAmount,
@@ -11,11 +11,11 @@ record TeaDryingPanRecipe(
         String outputId,
         int outputAmount
 ) {
-    boolean matches(String itemId, World world) {
+    public boolean matches(String itemId, World world) {
         return inputId.equals(itemId) && matchesWeather(world);
     }
 
-    boolean acceptsInput(String itemId) {
+    public boolean acceptsInput(String itemId) {
         return inputId.equals(itemId);
     }
 

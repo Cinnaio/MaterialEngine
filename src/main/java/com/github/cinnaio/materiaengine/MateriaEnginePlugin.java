@@ -1,6 +1,11 @@
 package com.github.cinnaio.materiaengine;
 
-import io.papermc.paper.command.brigadier.BasicCommand;
+import com.github.cinnaio.materiaengine.command.ReloadCommand;
+import com.github.cinnaio.materiaengine.data.TeaDryingPanDataStore;
+import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
+import com.github.cinnaio.materiaengine.feature.TeaDryingPanGui;
+import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
+import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -22,7 +27,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.teapan", "teapans", "tea pan", "teapan"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.barrel", "tea_barrels", "tea barrel", "barrel"));
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand());
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaDryingPanGui, processingMachines, lang));
 
         getLogger().info("MateriaEngine enabled.");
     }
@@ -42,29 +47,4 @@ public final class MateriaEnginePlugin extends JavaPlugin {
         getLogger().info("MateriaEngine disabled.");
     }
 
-    private final class ReloadCommand implements BasicCommand {
-        @Override
-        public void execute(io.papermc.paper.command.brigadier.CommandSourceStack source, String[] args) {
-            if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-                teaDryingPanGui.save();
-                processingMachines.forEach(SimpleProcessingMachineGui::save);
-                lang.reload();
-                teaDryingPanGui.reload();
-                processingMachines.forEach(SimpleProcessingMachineGui::reload);
-                source.getSender().sendMessage(lang.text(source.getSender(), "command.reload-success"));
-                return;
-            }
-            source.getSender().sendMessage(lang.text(source.getSender(), "command.usage-reload"));
-        }
-
-        @Override
-        public java.util.Collection<String> suggest(io.papermc.paper.command.brigadier.CommandSourceStack source, String[] args) {
-            return args.length <= 1 ? List.of("reload") : List.of();
-        }
-
-        @Override
-        public String permission() {
-            return "materiaengine.admin";
-        }
-    }
 }

@@ -1,9 +1,12 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.feature;
+
+import com.github.cinnaio.materiaengine.util.CraftEngineHook;
+import com.github.cinnaio.materiaengine.util.MachineItems;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
-record SimpleMachineRecipe(
+public record SimpleMachineRecipe(
         String id,
         String inputId,
         int inputAmount,
@@ -12,15 +15,15 @@ record SimpleMachineRecipe(
         int outputAmount,
         int outputState
 ) {
-    boolean matches(String itemId) {
+    public boolean matches(String itemId) {
         return inputId.equals(itemId);
     }
 
-    boolean acceptsInput(String itemId) {
+    public boolean acceptsInput(String itemId) {
         return inputId.equals(itemId);
     }
 
-    static SimpleMachineRecipe load(String id, ConfigurationSection recipe, int defaultProcessTicks, int defaultOutputState) {
+    public static SimpleMachineRecipe load(String id, ConfigurationSection recipe, int defaultProcessTicks, int defaultOutputState) {
         String inputId = recipe.getString("input.id", "");
         String outputId = recipe.getString("output.id", "");
         if (inputId.isBlank() || outputId.isBlank()) {
@@ -37,7 +40,7 @@ record SimpleMachineRecipe(
         );
     }
 
-    ItemStack createOutput(CraftEngineHook craftEngineHook) {
+    public ItemStack createOutput(CraftEngineHook craftEngineHook) {
         return MachineItems.createOutputItem(craftEngineHook, outputId, outputAmount);
     }
 }

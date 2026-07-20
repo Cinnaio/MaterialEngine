@@ -1,4 +1,4 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.data;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -6,8 +6,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
-class StoredMachine {
-    static final int SIZE = 27;
+public class StoredMachine {
+    public static final int SIZE = 27;
 
     private final UUID worldId;
     private final int x;
@@ -18,11 +18,11 @@ class StoredMachine {
     private int elapsed;
     private String runningRecipeId;
 
-    StoredMachine(UUID worldId, int x, int y, int z) {
+    public StoredMachine(UUID worldId, int x, int y, int z) {
         this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null);
     }
 
-    StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
+    public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
         this.worldId = worldId;
         this.x = x;
         this.y = y;
@@ -33,63 +33,63 @@ class StoredMachine {
         this.runningRecipeId = runningRecipeId;
     }
 
-    static String key(Location location) {
+    public static String key(Location location) {
         return location.getWorld().getUID() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
     }
 
-    String key() {
+    public String key() {
         return worldId + ":" + x + ":" + y + ":" + z;
     }
 
-    UUID worldId() {
+    public UUID worldId() {
         return worldId;
     }
 
-    int x() {
+    public int x() {
         return x;
     }
 
-    int y() {
+    public int y() {
         return y;
     }
 
-    int z() {
+    public int z() {
         return z;
     }
 
-    Location location(World world) {
+    public Location location(World world) {
         return new Location(world, x, y, z);
     }
 
-    ItemStack[] contents() {
+    public ItemStack[] contents() {
         return contents;
     }
 
-    boolean running() {
+    public boolean running() {
         return running;
     }
 
-    void running(boolean running) {
+    public void running(boolean running) {
         this.running = running;
     }
 
-    int elapsed() {
+    public int elapsed() {
         return elapsed;
     }
 
-    void elapsed(int elapsed) {
+    public void elapsed(int elapsed) {
         this.elapsed = Math.max(0, elapsed);
     }
 
-    String runningRecipeId() {
+    public String runningRecipeId() {
         return runningRecipeId;
     }
 
-    void runningRecipeId(String runningRecipeId) {
+    public void runningRecipeId(String runningRecipeId) {
         this.runningRecipeId = runningRecipeId;
     }
 
-    static ItemStack[] normalize(ItemStack[] source) {
+    public static ItemStack[] normalize(ItemStack[] source) {
         ItemStack[] normalized = new ItemStack[SIZE];
         if (source == null) {
             return normalized;

@@ -1,4 +1,11 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.feature;
+
+import com.github.cinnaio.materiaengine.config.MachineGuiLayout;
+import com.github.cinnaio.materiaengine.data.TeaDryingPanDataStore;
+import com.github.cinnaio.materiaengine.data.TeaDryingPanMachine;
+import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
+import com.github.cinnaio.materiaengine.util.CraftEngineHook;
+import com.github.cinnaio.materiaengine.util.MachineItems;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -29,88 +36,76 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-final class SimpleProcessingMachineGui implements Listener {
+public final class TeaDryingPanGui implements Listener {
+    private final JavaPlugin plugin;
+    private final CraftEngineHook craftEngineHook;
+    private final TeaDryingPanDataStore dataStore;
+    private final MateriaEngineLang lang;
+    private final Map<String, TeaDryingPanMachine> machines;
+    private final Map<String, Inventory> openMachines = new HashMap<>();
+    private final Map<String, Integer> renderedProgress = new HashMap<>();
+    private String blockId;
+    private String filledProperty;
+    private int defaultProcessTicks;
+    private int inputSlot;
+    private int outputSlot;
+    private String imageToken;
+    private String imageChar;
+    private int progressImageWidth;
+    private int titleUpdateTicks;
+    private Map<String, TeaDryingPanRecipe> recipes = Map.of();
+    private BukkitTask tickTask;
+
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
     private static final LegacyComponentSerializer SECTION_SERIALIZER = LegacyComponentSerializer.legacySection();
     private static final int PROGRESS_CHAR_START = 0xE900;
 
-    private final JavaPlugin plugin;
-    private final CraftEngineHook craftEngineHook;
-    private final MachineDataStore<SimpleMachine> dataStore;
-    private final MateriaEngineLang lang;
-    private final String configPath;
-    private final String langPrefix;
-    private final Map<String, SimpleMachine> machines;
-    private final Map<String, Inventory> openMachines = new HashMap<>();
-    private final Map<String, Integer> renderedProgress = new HashMap<>();
-
-    private String blockId;
-    private String stateProperty;
-    private int defaultState;
-    private int filledState;
-    private int runningState;
-    private int defaultProcessTicks;
-    private int inputSlot;
-    private int outputSlot;
-    private int progressImageWidth;
-    private int titleUpdateTicks;
-    private String imageToken;
-    private String imageChar;
-    private Map<String, SimpleMachineRecipe> recipes = Map.of();
-    private BukkitTask tickTask;
-
-    SimpleProcessingMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
-                               String configPath, String table, String description, String langPrefix) {
+    public TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore, MateriaEngineLang lang) {
         this.plugin = plugin;
         this.craftEngineHook = craftEngineHook;
+        this.dataStore = dataStore;
         this.lang = lang;
-        this.configPath = configPath;
-        this.langPrefix = langPrefix;
-        this.dataStore = new MachineDataStore<>(plugin, table, description, row -> new SimpleMachine(
-                row.worldId(), row.x(), row.y(), row.z(), row.contents(), row.running(), row.elapsed(), row.runningRecipeId()
-        ));
         this.machines = dataStore.load();
         reload();
         startTicking();
     }
 
-    void reload() {
+    public void reload() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
-        ConfigurationSection config = plugin.getConfig().getConfigurationSection(configPath);
+        ConfigurationSection config = plugin.getConfig().getConfigurationSection("machines.tea-drying-pan");
         if (config == null) {
-            throw new IllegalStateException("Missing " + configPath + " config");
+            throw new IllegalStateException("Missing machines.tea-drying-pan config");
         }
-        this.blockId = config.getString("block-id", "");
-        this.stateProperty = config.getString("state-property", "stage");
-        this.defaultState = config.getInt("default-state", 0);
-        this.filledState = config.getInt("filled-state", 1);
-        this.runningState = config.getInt("running-state", filledState);
+
+        this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
+        this.filledProperty = config.getString("filled-property", "filled");
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
-        this.progressImageWidth = config.getInt("progress-image-width", 108);
-        this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
-        this.imageToken = config.getString("gui-image-token", "<image:cgap:tea_drying_pan_gui>");
-        this.imageChar = config.getString("gui-image-char", "섀");
+        MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", "섀", 5, 108);
+        this.imageToken = gui.imageToken();
+        this.imageChar = gui.imageChar();
+        this.progressImageWidth = gui.progressImageWidth();
+        this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.recipes = loadRecipes(config);
-        machines.values().forEach(this::updateBlockState);
+        machines.values().forEach(this::updatePanState);
     }
 
-    void shutdown() {
+    public void shutdown() {
         if (tickTask != null) {
             tickTask.cancel();
         }
         for (Inventory inventory : openMachines.values()) {
             syncMachine(inventory);
         }
-        save();
+        dataStore.save(machines.values());
         openMachines.clear();
         renderedProgress.clear();
     }
 
-    void save() {
+    public void save() {
         dataStore.save(machines.values());
     }
 
@@ -123,7 +118,8 @@ final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         event.setCancelled(true);
-        openMachine(event.getPlayer(), machineAt(event.getClickedBlock().getLocation()));
+        TeaDryingPanMachine machine = machineAt(event.getClickedBlock().getLocation());
+        openMachine(event.getPlayer(), machine);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -131,28 +127,31 @@ final class SimpleProcessingMachineGui implements Listener {
         if (!craftEngineHook.isCustomBlock(event.getBlock(), blockId)) {
             return;
         }
-        String key = StoredMachine.key(event.getBlock().getLocation());
-        SimpleMachine machine = machines.remove(key);
+
+        String key = TeaDryingPanMachine.key(event.getBlock().getLocation());
+        TeaDryingPanMachine machine = machines.remove(key);
         if (machine == null) {
             dataStore.delete(key);
             return;
         }
+
         Inventory openInventory = openMachines.remove(key);
         if (openInventory != null) {
             for (HumanEntity viewer : openInventory.getViewers().toArray(HumanEntity[]::new)) {
                 viewer.closeInventory();
             }
         }
+        renderedProgress.remove(key);
         dropStoredItems(event.getBlock().getLocation(), machine.contents());
         dataStore.delete(key);
     }
 
     @EventHandler
     void onClick(InventoryClickEvent event) {
-        Holder holder = holder(event.getInventory());
-        if (holder == null) {
+        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
             return;
         }
+
         int topSize = event.getInventory().getSize();
         int slot = event.getRawSlot();
         if (event.isShiftClick()) {
@@ -177,12 +176,13 @@ final class SimpleProcessingMachineGui implements Listener {
             }
             if (MachineItems.hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
                 event.setCancelled(true);
-                message(event.getWhoClicked(), "input-only");
+                message(event.getWhoClicked(), "tea-drying-pan.input-only");
                 return;
             }
             Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
             return;
         }
+
         if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
             event.setCancelled(true);
             return;
@@ -192,8 +192,7 @@ final class SimpleProcessingMachineGui implements Listener {
 
     @EventHandler
     void onDrag(InventoryDragEvent event) {
-        Holder holder = holder(event.getInventory());
-        if (holder == null) {
+        if (!(event.getInventory().getHolder() instanceof Holder)) {
             return;
         }
         for (int slot : event.getRawSlots()) {
@@ -204,18 +203,17 @@ final class SimpleProcessingMachineGui implements Listener {
         }
         if (event.getRawSlots().contains(inputSlot) && !isAllowedInput(event.getOldCursor())) {
             event.setCancelled(true);
-            message(event.getWhoClicked(), "input-only");
+            message(event.getWhoClicked(), "tea-drying-pan.input-only");
             return;
         }
         if (event.getRawSlots().contains(inputSlot)) {
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(((Holder) event.getInventory().getHolder()).machine, event.getInventory()));
         }
     }
 
     @EventHandler
     void onClose(InventoryCloseEvent event) {
-        Holder holder = holder(event.getInventory());
-        if (holder != null) {
+        if (event.getInventory().getHolder() instanceof Holder holder) {
             syncMachine(event.getInventory());
             openMachines.remove(holder.machine.key());
             renderedProgress.remove(holder.machine.key());
@@ -223,9 +221,9 @@ final class SimpleProcessingMachineGui implements Listener {
         }
     }
 
-    private void openMachine(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine), StoredMachine.SIZE, title(player, 0));
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
+    private void openMachine(Player player, TeaDryingPanMachine machine) {
+        Inventory inventory = Bukkit.createInventory(new Holder(machine), TeaDryingPanMachine.SIZE, title(player, 0));
+        for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
             inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
         }
         openMachines.put(machine.key(), inventory);
@@ -233,55 +231,65 @@ final class SimpleProcessingMachineGui implements Listener {
         player.openInventory(inventory);
     }
 
-    private boolean start(SimpleMachine machine, org.bukkit.command.CommandSender sender) {
+    private void start(TeaDryingPanMachine machine, Inventory inventory, org.bukkit.command.CommandSender sender) {
+        syncMachine(inventory);
+        if (!start(machine, sender)) {
+            return;
+        }
+        for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
+            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+        }
+        render(inventory, machine);
+    }
+
+    private boolean start(TeaDryingPanMachine machine, org.bukkit.command.CommandSender sender) {
         ItemStack input = machine.contents()[inputSlot];
-        SimpleMachineRecipe recipe = findRecipe(input);
+        TeaDryingPanRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
             if (sender != null) {
-                message(sender, "no-recipe");
+                message(sender, "tea-drying-pan.no-recipe");
             }
             return false;
         }
-        ItemStack output = recipe.createOutput(craftEngineHook);
+        ItemStack output = createOutputItem(recipe);
         if (input.getAmount() < recipe.inputAmount()) {
             if (sender != null) {
-                message(sender, "not-enough-input");
+                message(sender, "tea-drying-pan.not-enough-input");
             }
             return false;
         }
         if (!canStore(machine, output)) {
             if (sender != null) {
-                message(sender, "output-blocked");
+                message(sender, "tea-drying-pan.output-blocked");
             }
             return false;
         }
+
         machine.running(true);
         machine.elapsed(0);
         machine.runningRecipeId(recipe.id());
-        updateBlockState(machine);
         save();
         return true;
     }
 
     private void tick() {
         boolean dirty = false;
-        for (SimpleMachine machine : machines.values()) {
+        for (TeaDryingPanMachine machine : machines.values()) {
             if (!machine.running()) {
                 continue;
             }
-            SimpleMachineRecipe recipe = recipes.get(machine.runningRecipeId());
+            TeaDryingPanRecipe recipe = recipes.get(machine.runningRecipeId());
             if (recipe == null) {
                 machine.running(false);
                 machine.runningRecipeId(null);
-                updateBlockState(machine);
                 dirty = true;
                 continue;
             }
             machine.elapsed(machine.elapsed() + 1);
-            spawnParticle(machine);
+            spawnSmoke(machine);
             Inventory openInventory = openMachines.get(machine.key());
             if (openInventory != null) {
-                updateTitle(openInventory, machine);
+                maybeRender(openInventory, machine);
             }
             if (machine.elapsed() < recipe.processTicks()) {
                 continue;
@@ -292,9 +300,9 @@ final class SimpleProcessingMachineGui implements Listener {
             consumeInput(machine, recipe);
             addOutput(machine, recipe);
             start(machine, null);
-            updateBlockState(machine);
+            updatePanState(machine);
             if (openInventory != null) {
-                for (int i = 0; i < StoredMachine.SIZE; i++) {
+                for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
                     openInventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
                 }
                 render(openInventory, machine);
@@ -307,21 +315,23 @@ final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void startTicking() {
+        // ponytail: one loop is enough for one machine type; split per-region only if Folia load proves it matters.
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
     }
 
-    private void spawnParticle(SimpleMachine machine) {
-        if (machine.elapsed() % 10 != 0) {
+    private void spawnSmoke(TeaDryingPanMachine machine) {
+        if (machine.elapsed() % 5 != 0) {
             return;
         }
         World world = Bukkit.getWorld(machine.worldId());
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.HAPPY_VILLAGER, machine.location(world).add(0.5, 1.0, 0.5), 1, 0.25, 0.15, 0.25, 0.01);
+        Location location = machine.location(world).add(0.5, 1.05, 0.5);
+        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, location, 2, 0.25, 0.12, 0.25, 0.01);
     }
 
-    private void consumeInput(SimpleMachine machine, SimpleMachineRecipe recipe) {
+    private void consumeInput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
         ItemStack input = machine.contents()[inputSlot];
         if (!MachineItems.hasItem(input)) {
             return;
@@ -332,12 +342,12 @@ final class SimpleProcessingMachineGui implements Listener {
         }
     }
 
-    private void addOutput(SimpleMachine machine, SimpleMachineRecipe recipe) {
-        store(machine.contents(), recipe.createOutput(craftEngineHook));
+    private void addOutput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
+        store(machine.contents(), createOutputItem(recipe));
     }
 
-    private boolean canStore(SimpleMachine machine, ItemStack output) {
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
+    private boolean canStore(TeaDryingPanMachine machine, ItemStack output) {
+        for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
             if (i != inputSlot && MachineItems.canAccept(machine.contents()[i], output)) {
                 return true;
             }
@@ -346,7 +356,7 @@ final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void store(ItemStack[] contents, ItemStack output) {
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
+        for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
             if (i != inputSlot && MachineItems.canAccept(contents[i], output)) {
                 if (!MachineItems.hasItem(contents[i])) {
                     contents[i] = output;
@@ -358,7 +368,7 @@ final class SimpleProcessingMachineGui implements Listener {
         }
     }
 
-    private void handleShiftClick(InventoryClickEvent event, SimpleMachine machine) {
+    private void handleShiftClick(InventoryClickEvent event, TeaDryingPanMachine machine) {
         event.setCancelled(true);
         if (event.getRawSlot() < event.getInventory().getSize()) {
             return;
@@ -377,7 +387,24 @@ final class SimpleProcessingMachineGui implements Listener {
             event.setCurrentItem(null);
         }
         syncMachine(event.getInventory());
+        render(event.getInventory(), machine);
         syncAndTryAutoStart(machine, event.getInventory());
+    }
+
+    private void syncAndTryAutoStart(TeaDryingPanMachine machine, Inventory inventory) {
+        syncMachine(inventory);
+        if (machine.running()) {
+            TeaDryingPanRecipe recipe = recipes.get(machine.runningRecipeId());
+            if (recipe == null || findRecipe(machine.contents()[inputSlot], Bukkit.getWorld(machine.worldId())) == null) {
+                machine.running(false);
+                machine.elapsed(0);
+                machine.runningRecipeId(null);
+                render(inventory, machine);
+            }
+            save();
+            return;
+        }
+        start(machine, inventory, null);
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
@@ -393,42 +420,32 @@ final class SimpleProcessingMachineGui implements Listener {
         return moved;
     }
 
-    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory) {
-        syncMachine(inventory);
-        if (!machine.running()) {
-            start(machine, null);
-        }
-    }
-
-    private void syncMachine(Inventory inventory) {
-        Holder holder = holder(inventory);
-        if (holder == null) {
-            return;
-        }
-        for (int i = 0; i < StoredMachine.SIZE; i++) {
-            holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
-        }
-        updateBlockState(holder.machine);
-    }
-
-    private void render(Inventory inventory, SimpleMachine machine) {
-        updateTitle(inventory, machine);
-    }
-
-    private void updateTitle(Inventory inventory, SimpleMachine machine) {
+    private void maybeRender(Inventory inventory, TeaDryingPanMachine machine) {
         int pixels = progressPixels(machine);
         Integer previous = renderedProgress.get(machine.key());
         if (previous != null && machine.running() && machine.elapsed() % titleUpdateTicks != 0) {
             return;
         }
         renderedProgress.put(machine.key(), pixels);
+        render(inventory, machine, pixels);
+    }
+
+    private void render(Inventory inventory, TeaDryingPanMachine machine) {
+        render(inventory, machine, progressPixels(machine));
+    }
+
+    private void render(Inventory inventory, TeaDryingPanMachine machine, int pixels) {
+        updateTitle(inventory, pixels);
+    }
+
+    private void updateTitle(Inventory inventory, int pixels) {
         for (HumanEntity viewer : inventory.getViewers()) {
             Component newTitle = title(viewer instanceof Player player ? player : null, pixels);
             viewer.getOpenInventory().setTitle(SECTION_SERIALIZER.serialize(newTitle));
         }
     }
 
-    private int progressPixels(SimpleMachine machine) {
+    private int progressPixels(TeaDryingPanMachine machine) {
         if (!machine.running()) {
             return 0;
         }
@@ -439,50 +456,40 @@ final class SimpleProcessingMachineGui implements Listener {
         return Math.max(1, Math.min(progressImageWidth, machine.elapsed() * progressImageWidth / totalTicks));
     }
 
-    private void updateBlockState(SimpleMachine machine) {
+    private Component title(Player player, int pixels) {
+        return parseTitle(lang.text(player, "tea-drying-pan.title").replace("{progress}", progressChar(pixels)));
+    }
+
+    private String progressChar(int pixels) {
+        return new String(Character.toChars(PROGRESS_CHAR_START + pixels));
+    }
+
+    private void syncMachine(Inventory inventory) {
+        if (!(inventory.getHolder() instanceof Holder holder)) {
+            return;
+        }
+        for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
+            holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
+        }
+        updatePanState(holder.machine);
+    }
+
+    private void updatePanState(TeaDryingPanMachine machine) {
         World world = Bukkit.getWorld(machine.worldId());
         if (world == null) {
             return;
         }
-        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, stateProperty, state(machine));
+        craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, filledProperty,
+                hasStoredItem(machine));
     }
 
-    private int state(SimpleMachine machine) {
-        if (machine.running()) {
-            return runningState;
-        }
-        SimpleMachineRecipe outputRecipe = recipeByOutput(machine.contents());
-        if (outputRecipe != null) {
-            return outputRecipe.outputState();
-        }
-        return hasStoredItem(machine) ? filledState : defaultState;
-    }
-
-    private boolean hasStoredItem(SimpleMachine machine) {
+    private boolean hasStoredItem(TeaDryingPanMachine machine) {
         for (ItemStack item : machine.contents()) {
             if (MachineItems.hasItem(item)) {
                 return true;
             }
         }
         return false;
-    }
-
-    private SimpleMachineRecipe recipeByOutput(ItemStack[] items) {
-        for (ItemStack item : items) {
-            SimpleMachineRecipe recipe = recipeByOutput(item);
-            if (recipe != null) {
-                return recipe;
-            }
-        }
-        return null;
-    }
-
-    private SimpleMachineRecipe recipeByOutput(ItemStack item) {
-        String itemId = craftEngineHook.getItemId(item);
-        if (itemId == null) {
-            return null;
-        }
-        return recipes.values().stream().filter(recipe -> recipe.outputId().equals(itemId)).findFirst().orElse(null);
     }
 
     private void dropStoredItems(Location location, ItemStack[] items) {
@@ -497,8 +504,8 @@ final class SimpleProcessingMachineGui implements Listener {
         }
     }
 
-    private SimpleMachine machineAt(Location location) {
-        return machines.computeIfAbsent(StoredMachine.key(location), ignored -> SimpleMachine.at(location));
+    private TeaDryingPanMachine machineAt(Location location) {
+        return machines.computeIfAbsent(TeaDryingPanMachine.key(location), ignored -> TeaDryingPanMachine.at(location));
     }
 
     private boolean isAllowedInput(ItemStack item) {
@@ -506,44 +513,60 @@ final class SimpleProcessingMachineGui implements Listener {
         return itemId != null && recipes.values().stream().anyMatch(recipe -> recipe.acceptsInput(itemId));
     }
 
-    private SimpleMachineRecipe findRecipe(ItemStack input) {
+    private TeaDryingPanRecipe findRecipe(ItemStack input, World world) {
         String itemId = craftEngineHook.getItemId(input);
         if (itemId == null) {
             return null;
         }
         return recipes.values().stream()
-                .filter(recipe -> recipe.matches(itemId) && input.getAmount() >= recipe.inputAmount())
+                .filter(recipe -> recipe.matches(itemId, world) && input.getAmount() >= recipe.inputAmount())
                 .findFirst()
                 .orElse(null);
     }
 
-    private Map<String, SimpleMachineRecipe> loadRecipes(ConfigurationSection config) {
-        Map<String, SimpleMachineRecipe> loaded = new LinkedHashMap<>();
+    private Map<String, TeaDryingPanRecipe> loadRecipes(ConfigurationSection config) {
+        Map<String, TeaDryingPanRecipe> loaded = new LinkedHashMap<>();
         ConfigurationSection recipesSection = config.getConfigurationSection("recipes");
         if (recipesSection == null) {
             return loaded;
         }
         for (String id : recipesSection.getKeys(false)) {
-            ConfigurationSection recipeSection = recipesSection.getConfigurationSection(id);
-            if (recipeSection == null) {
+            ConfigurationSection recipe = recipesSection.getConfigurationSection(id);
+            if (recipe == null) {
                 continue;
             }
-            SimpleMachineRecipe recipe = SimpleMachineRecipe.load(id, recipeSection, defaultProcessTicks, filledState);
-            if (recipe != null) {
-                loaded.put(id, recipe);
+            String inputId = recipe.getString("input.id", "");
+            String outputId = recipe.getString("output.id", "");
+            if (inputId.isBlank() || outputId.isBlank()) {
+                continue;
             }
+            loaded.put(id, new TeaDryingPanRecipe(
+                    id,
+                    inputId,
+                    Math.max(1, recipe.getInt("input.amount", 1)),
+                    recipe.getString("conditions.weather", "any").toLowerCase(),
+                    recipe.getInt("process-ticks", defaultProcessTicks),
+                    outputId,
+                    Math.max(1, recipe.getInt("output.amount", 1))
+            ));
         }
         return loaded;
     }
 
-    private Component title(Player player, int pixels) {
-        String base = lang.text(player, langPrefix + ".title");
-        String title = base.replace("{progress}", progressChar(pixels));
-        return parseTitle(title);
+    private TeaDryingPanRecipe fallbackRecipe() {
+        return new TeaDryingPanRecipe("", "", 1, "any", defaultProcessTicks, "", 1);
     }
 
-    private String progressChar(int pixels) {
-        return new String(Character.toChars(PROGRESS_CHAR_START + pixels));
+    private ItemStack createOutputItem(TeaDryingPanRecipe recipe) {
+        return MachineItems.createOutputItem(craftEngineHook, recipe.outputId(), recipe.outputAmount());
+    }
+
+    private static ItemStack[] cloneItems(ItemStack[] items) {
+        ItemStack[] copy = new ItemStack[TeaDryingPanMachine.SIZE];
+        for (int i = 0; i < Math.min(items.length, copy.length); i++) {
+            copy[i] = MachineItems.cloneItem(items[i]);
+        }
+        return copy;
     }
 
     private Component parseTitle(String title) {
@@ -570,25 +593,14 @@ final class SimpleProcessingMachineGui implements Listener {
                 .replace("&e", "<yellow>");
     }
 
-    private SimpleMachineRecipe fallbackRecipe() {
-        return new SimpleMachineRecipe("", "", 1, defaultProcessTicks, "", 1, filledState);
-    }
-
     private void message(org.bukkit.command.CommandSender target, String key) {
-        target.sendMessage(lang.text(target, langPrefix + "." + key));
-    }
-
-    private Holder holder(Inventory inventory) {
-        if (!(inventory.getHolder() instanceof Holder holder)) {
-            return null;
-        }
-        return openMachines.get(holder.machine.key()) == inventory ? holder : null;
+        target.sendMessage(lang.text(target, key));
     }
 
     private final class Holder implements InventoryHolder {
-        private final SimpleMachine machine;
+        private final TeaDryingPanMachine machine;
 
-        private Holder(SimpleMachine machine) {
+        private Holder(TeaDryingPanMachine machine) {
             this.machine = machine;
         }
 

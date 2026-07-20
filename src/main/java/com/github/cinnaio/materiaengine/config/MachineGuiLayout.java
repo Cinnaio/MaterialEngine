@@ -1,9 +1,9 @@
-package com.github.cinnaio.materiaengine;
+package com.github.cinnaio.materiaengine.config;
 
 import org.bukkit.configuration.ConfigurationSection;
 
-record MachineGuiLayout(String imageToken, String imageChar, int titleUpdateTicks, int progressImageWidth) {
-    static MachineGuiLayout load(ConfigurationSection config, String defaultImageToken, String defaultImageChar,
+public record MachineGuiLayout(String imageToken, String imageChar, int titleUpdateTicks, int progressImageWidth) {
+    public static MachineGuiLayout load(ConfigurationSection config, String defaultImageToken, String defaultImageChar,
                                  int defaultTitleUpdateTicks, int defaultProgressImageWidth) {
         String imageToken = config.getString("gui-image-token", config.getString("image-token", defaultImageToken));
         String imageChar = config.getString("gui-image-char", config.getString("image-char", defaultImageChar));
