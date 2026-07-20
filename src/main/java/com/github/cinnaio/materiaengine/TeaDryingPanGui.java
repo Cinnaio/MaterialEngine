@@ -53,6 +53,7 @@ final class TeaDryingPanGui implements Listener {
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final LegacyComponentSerializer SECTION_SERIALIZER = LegacyComponentSerializer.legacySection();
     private static final int PROGRESS_CHAR_START = 0xE900;
 
     TeaDryingPanGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, TeaDryingPanDataStore dataStore) {
@@ -349,7 +350,7 @@ final class TeaDryingPanGui implements Listener {
     private void updateTitle(Inventory inventory, TeaDryingPanMachine machine) {
         int pixels = progressPixels(machine);
         Component newTitle = parseTitle(titleWithProgress(pixels));
-        String legacyTitle = LEGACY_SERIALIZER.serialize(newTitle);
+        String legacyTitle = SECTION_SERIALIZER.serialize(newTitle);
         for (HumanEntity viewer : inventory.getViewers()) {
             viewer.getOpenInventory().setTitle(legacyTitle);
         }
@@ -496,7 +497,7 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private static Component parseTitle(String title) {
-        String parsed = title
+        String parsed = legacyToMiniMessage(title)
                 .replace("<shift:-11>", "")
                 .replace("<shift:-8>", "")
                 .replace("<image:cgap:tea_drying_pan_gui>", "섀")
@@ -505,6 +506,18 @@ final class TeaDryingPanGui implements Listener {
             parsed = "섀" + parsed;
         }
         return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
+    }
+
+    private static String legacyToMiniMessage(String text) {
+        return text
+                .replace("&r", "<reset>")
+                .replace("&f", "<white>")
+                .replace("&7", "<gray>")
+                .replace("&8", "<dark_gray>")
+                .replace("&0", "<black>")
+                .replace("&a", "<green>")
+                .replace("&c", "<red>")
+                .replace("&e", "<yellow>");
     }
 
     private static void message(org.bukkit.command.CommandSender target, String message) {
