@@ -76,6 +76,14 @@ final class CraftEngineHook {
     }
 
     boolean setBooleanState(Block block, String id, String propertyName, boolean value) {
+        return setState(block, id, propertyName, value);
+    }
+
+    boolean setIntState(Block block, String id, String propertyName, int value) {
+        return setState(block, id, propertyName, value);
+    }
+
+    private <T extends Comparable<T>> boolean setState(Block block, String id, String propertyName, T value) {
         if (block == null || id == null || id.isBlank() || !isEnabled()) {
             return false;
         }
@@ -85,7 +93,7 @@ final class CraftEngineHook {
                 return false;
             }
             @SuppressWarnings("unchecked")
-            Property<Boolean> property = (Property<Boolean>) custom.getProperty(propertyName);
+            Property<T> property = (Property<T>) custom.getProperty(propertyName);
             if (property == null) {
                 return false;
             }
@@ -93,7 +101,7 @@ final class CraftEngineHook {
             if (state == null || !id.equals(getBlockId(block))) {
                 state = custom.defaultState();
             }
-            if (Boolean.valueOf(value).equals(state.get(property))) {
+            if (value.equals(state.get(property))) {
                 return true;
             }
             return CraftEngineBlocks.place(block.getLocation(), state.with(property, value), false);

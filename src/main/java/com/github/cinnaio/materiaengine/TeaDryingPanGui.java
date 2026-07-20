@@ -5,7 +5,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -158,7 +157,7 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         if (slot == outputSlot) {
-            if (hasItem(event.getCursor())) {
+            if (MachineItems.hasItem(event.getCursor())) {
                 event.setCancelled(true);
                 return;
             }
@@ -166,7 +165,7 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         if (slot == inputSlot) {
-            if (hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
+            if (MachineItems.hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
                 event.setCancelled(true);
                 message(event.getWhoClicked(), "tea-drying-pan.input-only");
                 return;
@@ -211,8 +210,8 @@ final class TeaDryingPanGui implements Listener {
 
     private void openMachine(Player player, TeaDryingPanMachine machine) {
         Inventory inventory = Bukkit.createInventory(new Holder(machine), TeaDryingPanMachine.SIZE, title(player, 0));
-        inventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
-        inventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
+        inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+        inventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
         player.openInventory(inventory);
@@ -223,7 +222,7 @@ final class TeaDryingPanGui implements Listener {
         if (!start(machine, sender)) {
             return;
         }
-        inventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
+        inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
         render(inventory, machine);
     }
 
@@ -243,7 +242,7 @@ final class TeaDryingPanGui implements Listener {
             }
             return false;
         }
-        if (!canAccept(machine.contents()[outputSlot], output)) {
+        if (!MachineItems.canAccept(machine.contents()[outputSlot], output)) {
             if (sender != null) {
                 message(sender, "tea-drying-pan.output-blocked");
             }
@@ -287,8 +286,8 @@ final class TeaDryingPanGui implements Listener {
             start(machine, null);
             updatePanState(machine);
             if (openInventory != null) {
-                openInventory.setItem(inputSlot, cloneItem(machine.contents()[inputSlot]));
-                openInventory.setItem(outputSlot, cloneItem(machine.contents()[outputSlot]));
+                openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+                openInventory.setItem(outputSlot, MachineItems.cloneItem(machine.contents()[outputSlot]));
                 render(openInventory, machine);
             }
             dirty = true;
@@ -317,7 +316,7 @@ final class TeaDryingPanGui implements Listener {
 
     private void consumeInput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
         ItemStack input = machine.contents()[inputSlot];
-        if (!hasItem(input)) {
+        if (!MachineItems.hasItem(input)) {
             return;
         }
         input.setAmount(input.getAmount() - recipe.inputAmount());
@@ -329,7 +328,7 @@ final class TeaDryingPanGui implements Listener {
     private void addOutput(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
         ItemStack output = createOutputItem(recipe);
         ItemStack current = machine.contents()[outputSlot];
-        if (!hasItem(current)) {
+        if (!MachineItems.hasItem(current)) {
             machine.contents()[outputSlot] = output;
             return;
         }
@@ -346,7 +345,7 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         ItemStack input = event.getInventory().getItem(inputSlot);
-        if (!canAccept(input, current)) {
+        if (!MachineItems.canAccept(input, current)) {
             return;
         }
         int moved = moveOneStack(current, input, event.getInventory());
@@ -376,9 +375,9 @@ final class TeaDryingPanGui implements Listener {
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
-        int space = !hasItem(input) ? source.getMaxStackSize() : input.getMaxStackSize() - input.getAmount();
+        int space = !MachineItems.hasItem(input) ? source.getMaxStackSize() : input.getMaxStackSize() - input.getAmount();
         int moved = Math.min(source.getAmount(), space);
-        if (!hasItem(input)) {
+        if (!MachineItems.hasItem(input)) {
             ItemStack copy = source.clone();
             copy.setAmount(moved);
             inventory.setItem(inputSlot, copy);
@@ -442,8 +441,8 @@ final class TeaDryingPanGui implements Listener {
         if (!(inventory.getHolder() instanceof Holder holder)) {
             return;
         }
-        holder.machine.contents()[inputSlot] = cloneItem(inventory.getItem(inputSlot));
-        holder.machine.contents()[outputSlot] = cloneItem(inventory.getItem(outputSlot));
+        holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
+        holder.machine.contents()[outputSlot] = MachineItems.cloneItem(inventory.getItem(outputSlot));
         updatePanState(holder.machine);
     }
 
@@ -453,11 +452,11 @@ final class TeaDryingPanGui implements Listener {
             return;
         }
         craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, filledProperty,
-                hasItem(machine.contents()[inputSlot]) || hasItem(machine.contents()[outputSlot]));
+                MachineItems.hasItem(machine.contents()[inputSlot]) || MachineItems.hasItem(machine.contents()[outputSlot]));
     }
 
     private void dropStoredItem(Location location, ItemStack item) {
-        if (hasItem(item)) {
+        if (MachineItems.hasItem(item)) {
             location.getWorld().dropItemNaturally(location, item.clone());
         }
     }
@@ -515,35 +514,14 @@ final class TeaDryingPanGui implements Listener {
         return new TeaDryingPanRecipe("", "", 1, "any", defaultProcessTicks, "", 1);
     }
 
-    private boolean canAccept(ItemStack current, ItemStack incoming) {
-        return !hasItem(current) || current.isSimilar(incoming) && current.getAmount() + incoming.getAmount() <= current.getMaxStackSize();
-    }
-
-    private static boolean hasItem(ItemStack item) {
-        return item != null && !item.getType().isAir() && item.getAmount() > 0;
-    }
-
     private ItemStack createOutputItem(TeaDryingPanRecipe recipe) {
-        ItemStack custom = craftEngineHook.createItem(recipe.outputId());
-        ItemStack output = custom != null ? custom : new ItemStack(materialFromId(recipe.outputId()));
-        output.setAmount(recipe.outputAmount());
-        return output;
-    }
-
-    private static Material materialFromId(String id) {
-        String materialId = id == null ? "" : id.toUpperCase().replace("MINECRAFT:", "");
-        Material material = Material.matchMaterial(materialId);
-        return material == null ? Material.STONE : material;
-    }
-
-    private static ItemStack cloneItem(ItemStack item) {
-        return item == null ? null : item.clone();
+        return MachineItems.createOutputItem(craftEngineHook, recipe.outputId(), recipe.outputAmount());
     }
 
     private static ItemStack[] cloneItems(ItemStack[] items) {
         ItemStack[] copy = new ItemStack[TeaDryingPanMachine.SIZE];
         for (int i = 0; i < Math.min(items.length, copy.length); i++) {
-            copy[i] = cloneItem(items[i]);
+            copy[i] = MachineItems.cloneItem(items[i]);
         }
         return copy;
     }
