@@ -8,6 +8,7 @@ machines:
     progress-image-prefix: cgap:tea_progress_
     progress-image-width: 108
     progress-title-shift: 108
+    progress-return-shift: 108
     recipes:
       green-tea-clear:
         input:

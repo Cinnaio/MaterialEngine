@@ -50,6 +50,7 @@ final class TeaDryingPanGui implements Listener {
     private String progressImagePrefix;
     private int progressImageWidth;
     private int progressTitleShift;
+    private int progressReturnShift;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -83,6 +84,7 @@ final class TeaDryingPanGui implements Listener {
         this.progressImagePrefix = config.getString("progress-image-prefix", "cgap:tea_progress_");
         this.progressImageWidth = config.getInt("progress-image-width", 108);
         this.progressTitleShift = config.getInt("progress-title-shift", progressImageWidth);
+        this.progressReturnShift = config.getInt("progress-return-shift", progressImageWidth);
         this.title = parseTitle(rawTitleWithProgress(progressImagePrefix + 0));
         this.recipes = loadRecipes(config);
     }
@@ -373,7 +375,9 @@ final class TeaDryingPanGui implements Listener {
         if (!matcher.find()) {
             return rawTitle + "<image:" + progressImageId + ">";
         }
-        return rawTitle.substring(0, matcher.end()) + "<shift:-" + progressTitleShift + "><image:" + progressImageId + ">" + rawTitle.substring(matcher.end());
+        return rawTitle.substring(0, matcher.end())
+                + "<shift:-" + progressTitleShift + "><white><image:" + progressImageId + "><shift:" + progressReturnShift + ">"
+                + rawTitle.substring(matcher.end());
     }
 
     private void syncMachine(Inventory inventory) {
