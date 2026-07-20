@@ -150,7 +150,8 @@ final class SimpleProcessingMachineGui implements Listener {
 
     @EventHandler
     void onClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
+        Holder holder = holder(event.getInventory());
+        if (holder == null) {
             return;
         }
         int topSize = event.getInventory().getSize();
@@ -184,7 +185,8 @@ final class SimpleProcessingMachineGui implements Listener {
 
     @EventHandler
     void onDrag(InventoryDragEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Holder holder)) {
+        Holder holder = holder(event.getInventory());
+        if (holder == null) {
             return;
         }
         for (int slot : event.getRawSlots()) {
@@ -205,7 +207,8 @@ final class SimpleProcessingMachineGui implements Listener {
 
     @EventHandler
     void onClose(InventoryCloseEvent event) {
-        if (event.getInventory().getHolder() instanceof Holder holder) {
+        Holder holder = holder(event.getInventory());
+        if (holder != null) {
             syncMachine(event.getInventory());
             openMachines.remove(holder.machine.key());
             renderedProgress.remove(holder.machine.key());
@@ -370,7 +373,8 @@ final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void syncMachine(Inventory inventory) {
-        if (!(inventory.getHolder() instanceof Holder holder)) {
+        Holder holder = holder(inventory);
+        if (holder == null) {
             return;
         }
         holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
@@ -523,6 +527,13 @@ final class SimpleProcessingMachineGui implements Listener {
 
     private void message(org.bukkit.command.CommandSender target, String key) {
         target.sendMessage(lang.text(target, langPrefix + "." + key));
+    }
+
+    private Holder holder(Inventory inventory) {
+        if (!(inventory.getHolder() instanceof Holder holder)) {
+            return null;
+        }
+        return openMachines.get(holder.machine.key()) == inventory ? holder : null;
     }
 
     private final class Holder implements InventoryHolder {

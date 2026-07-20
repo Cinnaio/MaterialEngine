@@ -1,14 +1,25 @@
 machines:
+  # 炒茶锅：现有原型，保留旧的萎凋/烘制流程。
   tea-drying-pan:
+    # 绑定的 CraftEngine 方块 id。
     block-id: cgap:tea_drying_pan
+    # 方块状态属性名；filled=true 时切换到装料模型。
     filled-property: filled
+    # 默认加工时长，部分配方可覆盖。
     process-ticks: 100
+    # 输入槽位。
     input-slot: 12
+    # 输出槽位。
     output-slot: 14
-    progress-image-prefix: cgap:tea_progress_
-    progress-image-width: 108
+    # GUI 标题刷新间隔（tick）。
     title-update-ticks: 5
+    # 进度条可显示的最大像素宽度。
+    progress-image-width: 108
+    # 当前保留的进度图片前缀；代码里暂未直接使用。
+    progress-image-prefix: cgap:tea_progress_
+    # 配方列表。
     recipes:
+      # 晴天：青叶 -> 绿茶叶。
       green-tea-clear:
         input:
           id: cgap:tea_leaf
@@ -19,6 +30,7 @@ machines:
         output:
           id: cgap:green_tea_leaf
           amount: 1
+      # 雨天版本。
       green-tea-rain:
         input:
           id: cgap:tea_leaf
@@ -29,6 +41,7 @@ machines:
         output:
           id: cgap:green_tea_leaf
           amount: 1
+      # 雷雨版本。
       green-tea-thunder:
         input:
           id: cgap:tea_leaf
@@ -39,20 +52,36 @@ machines:
         output:
           id: cgap:green_tea_leaf
           amount: 1
+
+  # 茶盘：先作为茶叶处理机器，后续你可以再重新规划职责。
   teapan:
+    # 方块 id。
     block-id: cgap:teapan
+    # 方块状态属性名。
     state-property: stage
+    # 空茶盘状态。
     default-state: 0
+    # 有原料时的状态。
     filled-state: 1
+    # 运行中状态。
     running-state: 1
+    # 默认加工时长。
     process-ticks: 100
+    # 输入槽位。
     input-slot: 12
+    # 输出槽位。
     output-slot: 14
+    # GUI 标题刷新间隔。
     title-update-ticks: 5
+    # 进度条像素宽度。
     progress-image-width: 108
+    # GUI 图片字体 token。
     gui-image-token: <image:cgap:tea_drying_pan_gui>
+    # GUI 图片字符。
     gui-image-char: 섀
+    # 茶盘配方。
     recipes:
+      # 鲜叶 -> 萎凋叶。
       fresh-to-withered:
         input:
           id: cgap:fresh_tea_leaf
@@ -62,6 +91,7 @@ machines:
         output:
           id: cgap:withered_tea_leaf
           amount: 1
+      # 萎凋叶 -> 湿茶。
       withered-to-wet:
         input:
           id: cgap:withered_tea_leaf
@@ -71,6 +101,7 @@ machines:
         output:
           id: cgap:wet_tea_leaf
           amount: 1
+      # 湿茶 -> 黄茶叶。
       wet-to-yellow:
         input:
           id: cgap:wet_tea_leaf
@@ -80,6 +111,7 @@ machines:
         output:
           id: cgap:yellow_tea_leaf
           amount: 1
+      # 绿茶叶 -> 抹茶叶。
       green-to-matcha:
         input:
           id: cgap:green_tea_leaf
@@ -89,20 +121,36 @@ machines:
         output:
           id: cgap:matcha_tea_leaf
           amount: 1
+
+  # 发酵桶：茶叶发酵机器。
   barrel:
+    # 方块 id。
     block-id: cgap:barrel
+    # 方块状态属性名。
     state-property: stage
+    # 空桶状态。
     default-state: 0
+    # 有原料时的状态。
     filled-state: 1
+    # 运行中状态。
     running-state: 2
+    # 默认加工时长。
     process-ticks: 160
+    # 输入槽位。
     input-slot: 12
+    # 输出槽位。
     output-slot: 14
+    # GUI 标题刷新间隔。
     title-update-ticks: 5
+    # 进度条像素宽度。
     progress-image-width: 108
+    # GUI 图片字体 token。
     gui-image-token: <image:cgap:tea_drying_pan_gui>
+    # GUI 图片字符。
     gui-image-char: 섀
+    # 发酵桶配方。
     recipes:
+      # 碎茶 -> 半发酵茶。
       broken-to-semi:
         input:
           id: cgap:broken_tea_leaf
@@ -112,6 +160,7 @@ machines:
         output:
           id: cgap:semi_fermented_tea_leaf
           amount: 1
+      # 半发酵茶 -> 全发酵茶。
       semi-to-full:
         input:
           id: cgap:semi_fermented_tea_leaf
@@ -121,6 +170,7 @@ machines:
         output:
           id: cgap:fully_fermented_tea_leaf
           amount: 1
+      # 全发酵茶 -> 重发酵茶。
       full-to-deep:
         input:
           id: cgap:fully_fermented_tea_leaf
