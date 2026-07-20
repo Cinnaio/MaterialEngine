@@ -427,7 +427,7 @@ public final class SimpleProcessingMachineGui implements Listener {
 
     private void fillStorage(Inventory inventory, SimpleMachine machine) {
         for (int i = 0; i < StoredMachine.SIZE; i++) {
-            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+            inventory.setItem(i, i == inputSlot ? null : MachineItems.cloneItem(machine.contents()[i]));
         }
     }
 

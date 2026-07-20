@@ -426,7 +426,7 @@ public final class TeaDryingPanGui implements Listener {
 
     private void fillStorage(Inventory inventory, TeaDryingPanMachine machine) {
         for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
-            inventory.setItem(i, MachineItems.cloneItem(machine.contents()[i]));
+            inventory.setItem(i, i == inputSlot ? null : MachineItems.cloneItem(machine.contents()[i]));
         }
     }
 
