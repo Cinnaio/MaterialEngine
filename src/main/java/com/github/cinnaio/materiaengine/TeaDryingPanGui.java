@@ -43,10 +43,8 @@ final class TeaDryingPanGui implements Listener {
     private Component title;
     private int defaultProcessTicks;
     private int inputSlot;
-    private int progressSlot;
     private int outputSlot;
-    private int startSlot;
-    private List<String> progressItemIds;
+    private List<Integer> progressSlots;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -75,10 +73,11 @@ final class TeaDryingPanGui implements Listener {
         this.title = parseTitle(config.getString("title", "<shift:-11><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"));
         this.defaultProcessTicks = config.getInt("process-ticks", 100);
         this.inputSlot = config.getInt("input-slot", 11);
-        this.progressSlot = config.getInt("progress-slot", 13);
         this.outputSlot = config.getInt("output-slot", 15);
-        this.startSlot = config.getInt("start-slot", 22);
-        this.progressItemIds = config.getStringList("progress-items");
+        this.progressSlots = config.getIntegerList("progress-slots");
+        if (progressSlots.isEmpty()) {
+            this.progressSlots = List.of(config.getInt("progress-slot", 13));
+        }
         this.recipes = loadRecipes(config);
     }
 
@@ -144,14 +143,13 @@ final class TeaDryingPanGui implements Listener {
             if (hasItem(event.getCursor()) && !isAllowedInput(event.getCursor())) {
                 event.setCancelled(true);
                 message(event.getWhoClicked(), "这里只能放入炒茶原料。");
+                return;
             }
+            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(holder.machine, event.getInventory()));
             return;
         }
 
         event.setCancelled(true);
-        if (slot == startSlot && !holder.machine.running()) {
-            start(holder.machine, event.getInventory(), event.getWhoClicked());
-        }
     }
 
     @EventHandler
@@ -168,6 +166,10 @@ final class TeaDryingPanGui implements Listener {
         if (event.getRawSlots().contains(inputSlot) && !isAllowedInput(event.getOldCursor())) {
             event.setCancelled(true);
             message(event.getWhoClicked(), "这里只能放入炒茶原料。");
+            return;
+        }
+        if (event.getRawSlots().contains(inputSlot)) {
+            Bukkit.getScheduler().runTask(plugin, () -> tryAutoStart(((Holder) event.getInventory().getHolder()).machine, event.getInventory()));
         }
     }
 
@@ -206,16 +208,22 @@ final class TeaDryingPanGui implements Listener {
         ItemStack input = inventory.getItem(inputSlot);
         TeaDryingPanRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
-            message(sender, "当前原料和天气没有可用配方。");
+            if (sender != null) {
+                message(sender, "当前原料和天气没有可用配方。");
+            }
             return;
         }
         ItemStack output = createOutputItem(recipe);
         if (input.getAmount() < recipe.inputAmount()) {
-            message(sender, "原料数量不足。");
+            if (sender != null) {
+                message(sender, "原料数量不足。");
+            }
             return;
         }
         if (!canAccept(inventory.getItem(outputSlot), output)) {
-            message(sender, "请先取出产物。");
+            if (sender != null) {
+                message(sender, "请先取出产物。");
+            }
             return;
         }
 
@@ -302,6 +310,13 @@ final class TeaDryingPanGui implements Listener {
         }
         syncMachine(event.getInventory());
         render(event.getInventory(), machine);
+        tryAutoStart(machine, event.getInventory());
+    }
+
+    private void tryAutoStart(TeaDryingPanMachine machine, Inventory inventory) {
+        if (!machine.running()) {
+            start(machine, inventory, null);
+        }
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
@@ -319,15 +334,17 @@ final class TeaDryingPanGui implements Listener {
 
     private void render(Inventory inventory, TeaDryingPanMachine machine) {
         for (int i = 0; i < inventory.getSize(); i++) {
-            if (i != inputSlot && i != progressSlot && i != outputSlot && i != startSlot) {
+            if (i != inputSlot && i != outputSlot && !progressSlots.contains(i)) {
                 inventory.clear(i);
             }
         }
 
         int totalTicks = recipes.getOrDefault(machine.runningRecipeId(), fallbackRecipe()).processTicks();
         int percent = totalTicks == 0 ? 100 : Math.min(100, machine.elapsed() * 100 / totalTicks);
-        inventory.setItem(progressSlot, createProgressItem(percent));
-        inventory.setItem(startSlot, guiItem(machine.running() ? Material.YELLOW_STAINED_GLASS_PANE : Material.GREEN_STAINED_GLASS_PANE, machine.running() ? "炒制中" : "开始炒制"));
+        int filled = machine.running() ? Math.max(1, percent * progressSlots.size() / 100) : 0;
+        for (int i = 0; i < progressSlots.size(); i++) {
+            inventory.setItem(progressSlots.get(i), createProgressItem(i < filled));
+        }
     }
 
     private void syncMachine(Inventory inventory) {
@@ -419,15 +436,8 @@ final class TeaDryingPanGui implements Listener {
         return output;
     }
 
-    private ItemStack createProgressItem(int percent) {
-        if (!progressItemIds.isEmpty()) {
-            int index = Math.min(progressItemIds.size() - 1, percent * progressItemIds.size() / 101);
-            ItemStack custom = craftEngineHook.createItem(progressItemIds.get(index));
-            if (custom != null) {
-                return custom;
-            }
-        }
-        return guiItem(Material.LIME_STAINED_GLASS_PANE, "进度 " + percent + "%");
+    private ItemStack createProgressItem(boolean filled) {
+        return guiItem(filled ? Material.RED_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE, filled ? "炒制进度" : "等待炒制");
     }
 
     private ItemStack guiItem(Material material, String name) {

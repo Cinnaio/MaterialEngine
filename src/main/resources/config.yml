@@ -1,19 +1,11 @@
 machines:
   tea-drying-pan:
     block-id: cgap:tea_drying_pan
-    title: "<white><shift:-8><image:cgap:tea_drying_pan_gui>炒茶（煮饭）锅"
+    title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-170><reset>炒茶（煮饭）锅"
     process-ticks: 100
     input-slot: 11
-    progress-slot: 13
     output-slot: 15
-    start-slot: 22
-    progress-items:
-      - cgap:tea_drying_pan_progress_0
-      - cgap:tea_drying_pan_progress_1
-      - cgap:tea_drying_pan_progress_2
-      - cgap:tea_drying_pan_progress_3
-      - cgap:tea_drying_pan_progress_4
-      - cgap:tea_drying_pan_progress_5
+    progress-slots: [19, 20, 21, 22, 23, 24, 25]
     recipes:
       green-tea-clear:
         input:
