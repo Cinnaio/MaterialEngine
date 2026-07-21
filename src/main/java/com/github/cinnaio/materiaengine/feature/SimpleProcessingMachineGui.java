@@ -67,7 +67,6 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int progressCharStart;
     private int titleUpdateTicks;
     private String imageToken;
-    private String imageChar;
     private String titleTemplate;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
     private BukkitTask tickTask;
@@ -103,12 +102,11 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
         this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
         this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
-        MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", "섀", 5, 108);
+        MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", 5, 108);
         this.progressImageWidth = gui.progressImageWidth();
         this.progressCharStart = integer(config, "gui.progress-char-start", config.getInt("progress-char-start", PROGRESS_CHAR_START));
         this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.imageToken = gui.imageToken();
-        this.imageChar = gui.imageChar();
         this.titleTemplate = gui.titleTemplate();
         this.recipes = loadRecipes(config);
         machines.values().forEach(this::updateBlockState);
@@ -659,12 +657,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private Component parseTitle(String title) {
         String parsed = legacyToMiniMessage(title)
                 .replace("<shift:-11>", "")
-                .replace("<shift:-8>", "")
-                .replace(imageToken, imageChar)
-                .replace("대", "" + imageChar);
-        if (!parsed.contains(imageChar)) {
-            parsed = "" + imageChar + parsed;
-        }
+                .replace("<shift:-8>", "");
         return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
     }
 

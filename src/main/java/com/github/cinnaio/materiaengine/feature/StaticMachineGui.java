@@ -31,7 +31,6 @@ public final class StaticMachineGui implements Listener {
     private final String langPrefix;
     private String blockId;
     private String imageToken;
-    private String imageChar;
     private String titleTemplate;
 
     public StaticMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
@@ -51,7 +50,6 @@ public final class StaticMachineGui implements Listener {
         }
         this.blockId = string(config, "block.id", config.getString("block-id", ""));
         this.imageToken = string(config, "gui.image-token", config.getString("gui-image-token", config.getString("image-token", "")));
-        this.imageChar = string(config, "gui.image-char", config.getString("gui-image-char", config.getString("image-char", "")));
         this.titleTemplate = string(config, "gui.title", config.getString("title", ""));
     }
 
@@ -92,11 +90,7 @@ public final class StaticMachineGui implements Listener {
                 .replace("{image}", imageToken)
                 .replace("{name}", lang.text(player, langPrefix + ".name"))
                 .replace("<shift:-11>", "")
-                .replace("<shift:-8>", "")
-                .replace(imageToken, imageChar);
-        if (!parsed.contains(imageChar)) {
-            parsed = "" + imageChar + parsed;
-        }
+                .replace("<shift:-8>", "");
         return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
     }
 

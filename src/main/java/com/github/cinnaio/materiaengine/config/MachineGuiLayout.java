@@ -2,17 +2,15 @@ package com.github.cinnaio.materiaengine.config;
 
 import org.bukkit.configuration.ConfigurationSection;
 
-public record MachineGuiLayout(String imageToken, String imageChar, String titleTemplate, int titleUpdateTicks, int progressImageWidth) {
-    public static MachineGuiLayout load(ConfigurationSection config, String defaultImageToken, String defaultImageChar,
+public record MachineGuiLayout(String imageToken, String titleTemplate, int titleUpdateTicks, int progressImageWidth) {
+    public static MachineGuiLayout load(ConfigurationSection config, String defaultImageToken,
                                  int defaultTitleUpdateTicks, int defaultProgressImageWidth) {
         String imageToken = string(config, "gui.image-token", string(config, "gui.gui-image-token",
                 config.getString("gui-image-token", config.getString("image-token", defaultImageToken))));
-        String imageChar = string(config, "gui.image-char", string(config, "gui.gui-image-char",
-                config.getString("gui-image-char", config.getString("image-char", defaultImageChar))));
         String titleTemplate = string(config, "gui.title", config.getString("title", ""));
         int titleUpdateTicks = integer(config, "gui.title-update-ticks", config.getInt("title-update-ticks", defaultTitleUpdateTicks));
         int progressImageWidth = integer(config, "gui.progress-image-width", config.getInt("progress-image-width", defaultProgressImageWidth));
-        return new MachineGuiLayout(imageToken, imageChar, titleTemplate, titleUpdateTicks, progressImageWidth);
+        return new MachineGuiLayout(imageToken, titleTemplate, titleUpdateTicks, progressImageWidth);
     }
 
     private static String string(ConfigurationSection config, String path, String fallback) {

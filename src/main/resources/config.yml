@@ -10,7 +10,6 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      image-char: 섀
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
@@ -60,7 +59,6 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      image-char: 섀
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
@@ -116,7 +114,6 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      image-char: 섀
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
@@ -164,7 +161,6 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      image-char: 섁
       title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-94><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 5
@@ -214,7 +210,6 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      image-char: 섀
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
@@ -253,5 +248,4 @@ machines:
       id: cgap:tea_table
     gui:
       image-token: <image:cgap:tea_table_gui>
-      image-char: 섂
       title: "<white><shift:-9>{image}<shift:-169><reset>{name}"
