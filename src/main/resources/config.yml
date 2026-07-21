@@ -193,7 +193,8 @@ machines:
     input-slot: 12
     output-slot: 14
     title-update-ticks: 5
-    progress-image-width: 108
+    progress-image-width: 5
+    progress-char-start: 59776
     gui-image-token: <image:cgap:tea_stove_gui>
     gui-image-char: 섁
     recipes:

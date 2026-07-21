@@ -63,6 +63,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int inputSlot;
     private int outputSlot;
     private int progressImageWidth;
+    private int progressCharStart;
     private int titleUpdateTicks;
     private String imageToken;
     private String imageChar;
@@ -101,6 +102,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.inputSlot = config.getInt("input-slot", 11);
         this.outputSlot = config.getInt("output-slot", 15);
         this.progressImageWidth = config.getInt("progress-image-width", 108);
+        this.progressCharStart = config.getInt("progress-char-start", PROGRESS_CHAR_START);
         this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
         this.imageToken = config.getString("gui-image-token", "<image:cgap:tea_drying_pan_gui>");
         this.imageChar = config.getString("gui-image-char", "섀");
@@ -644,7 +646,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private String progressChar(int pixels) {
-        return new String(Character.toChars(PROGRESS_CHAR_START + pixels));
+        return new String(Character.toChars(progressCharStart + pixels));
     }
 
     private Component parseTitle(String title) {
