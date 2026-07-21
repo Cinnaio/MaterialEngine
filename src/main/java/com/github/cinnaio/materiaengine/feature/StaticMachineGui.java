@@ -32,6 +32,7 @@ public final class StaticMachineGui implements Listener {
     private String blockId;
     private String imageToken;
     private String imageChar;
+    private String titleTemplate;
 
     public StaticMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
                             String configPath, String langPrefix) {
@@ -48,9 +49,10 @@ public final class StaticMachineGui implements Listener {
         if (config == null) {
             throw new IllegalStateException("Missing " + configPath + " config");
         }
-        this.blockId = config.getString("block-id", "");
-        this.imageToken = config.getString("gui-image-token", "");
-        this.imageChar = config.getString("gui-image-char", "");
+        this.blockId = string(config, "block.id", config.getString("block-id", ""));
+        this.imageToken = string(config, "gui.image-token", config.getString("gui-image-token", config.getString("image-token", "")));
+        this.imageChar = string(config, "gui.image-char", config.getString("gui-image-char", config.getString("image-char", "")));
+        this.titleTemplate = string(config, "gui.title", config.getString("title", ""));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -85,8 +87,10 @@ public final class StaticMachineGui implements Listener {
     }
 
     private Component title(Player player) {
-        String title = lang.text(player, langPrefix + ".title");
-        String parsed = title
+        String template = titleTemplate.isBlank() ? lang.text(player, langPrefix + ".title") : titleTemplate;
+        String parsed = template
+                .replace("{image}", imageToken)
+                .replace("{name}", lang.text(player, langPrefix + ".name"))
                 .replace("<shift:-11>", "")
                 .replace("<shift:-8>", "")
                 .replace(imageToken, imageChar);
@@ -94,6 +98,10 @@ public final class StaticMachineGui implements Listener {
             parsed = "" + imageChar + parsed;
         }
         return parsed.contains("<") ? MINI_MESSAGE.deserialize(parsed) : LEGACY_SERIALIZER.deserialize(parsed);
+    }
+
+    private static String string(ConfigurationSection config, String path, String fallback) {
+        return config.isString(path) ? config.getString(path, fallback) : fallback;
     }
 
     private static final class Holder implements InventoryHolder {

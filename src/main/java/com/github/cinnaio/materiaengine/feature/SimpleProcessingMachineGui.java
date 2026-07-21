@@ -1,5 +1,6 @@
 package com.github.cinnaio.materiaengine.feature;
 
+import com.github.cinnaio.materiaengine.config.MachineGuiLayout;
 import com.github.cinnaio.materiaengine.data.MachineDataStore;
 import com.github.cinnaio.materiaengine.data.SimpleMachine;
 import com.github.cinnaio.materiaengine.data.StoredMachine;
@@ -67,6 +68,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int titleUpdateTicks;
     private String imageToken;
     private String imageChar;
+    private String titleTemplate;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -92,20 +94,22 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (config == null) {
             throw new IllegalStateException("Missing " + configPath + " config");
         }
-        this.blockId = config.getString("block-id", "");
-        this.stateProperty = config.getString("state-property", "stage");
-        this.booleanState = config.getString("state-type", "int").equalsIgnoreCase("boolean");
-        this.defaultState = config.getInt("default-state", 0);
-        this.filledState = config.getInt("filled-state", 1);
-        this.runningState = config.getInt("running-state", filledState);
-        this.defaultProcessTicks = config.getInt("process-ticks", 100);
-        this.inputSlot = config.getInt("input-slot", 11);
-        this.outputSlot = config.getInt("output-slot", 15);
-        this.progressImageWidth = config.getInt("progress-image-width", 108);
-        this.progressCharStart = config.getInt("progress-char-start", PROGRESS_CHAR_START);
-        this.titleUpdateTicks = Math.max(1, config.getInt("title-update-ticks", 5));
-        this.imageToken = config.getString("gui-image-token", "<image:cgap:tea_drying_pan_gui>");
-        this.imageChar = config.getString("gui-image-char", "섀");
+        this.blockId = string(config, "block.id", config.getString("block-id", ""));
+        this.stateProperty = string(config, "block.state-property", config.getString("state-property", "stage"));
+        this.booleanState = string(config, "block.state-type", config.getString("state-type", "int")).equalsIgnoreCase("boolean");
+        this.defaultState = integer(config, "block.default-state", config.getInt("default-state", 0));
+        this.filledState = integer(config, "block.filled-state", config.getInt("filled-state", 1));
+        this.runningState = integer(config, "block.running-state", config.getInt("running-state", filledState));
+        this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
+        this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
+        this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
+        MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", "섀", 5, 108);
+        this.progressImageWidth = gui.progressImageWidth();
+        this.progressCharStart = integer(config, "gui.progress-char-start", config.getInt("progress-char-start", PROGRESS_CHAR_START));
+        this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
+        this.imageToken = gui.imageToken();
+        this.imageChar = gui.imageChar();
+        this.titleTemplate = gui.titleTemplate();
         this.recipes = loadRecipes(config);
         machines.values().forEach(this::updateBlockState);
     }
@@ -640,8 +644,11 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private Component title(Player player, int pixels) {
-        String base = lang.text(player, langPrefix + ".title");
-        String title = base.replace("{progress}", progressChar(pixels));
+        String template = titleTemplate.isBlank() ? lang.text(player, langPrefix + ".title") : titleTemplate;
+        String title = template
+                .replace("{image}", imageToken)
+                .replace("{progress}", progressChar(pixels))
+                .replace("{name}", lang.text(player, langPrefix + ".name"));
         return parseTitle(title);
     }
 
@@ -671,6 +678,14 @@ public final class SimpleProcessingMachineGui implements Listener {
                 .replace("&a", "<green>")
                 .replace("&c", "<red>")
                 .replace("&e", "<yellow>");
+    }
+
+    private static String string(ConfigurationSection config, String path, String fallback) {
+        return config.isString(path) ? config.getString(path, fallback) : fallback;
+    }
+
+    private static int integer(ConfigurationSection config, String path, int fallback) {
+        return config.isInt(path) ? config.getInt(path) : fallback;
     }
 
     private SimpleMachineRecipe fallbackRecipe() {

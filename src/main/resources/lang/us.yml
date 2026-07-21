@@ -3,39 +3,39 @@ command:
   usage-reload: "§eUsage: /materiaengine reload"
 
 tea-drying-pan:
-  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Tea Drying Pan"
+  name: "Tea Drying Pan"
   input-only: "Only tea-processing ingredients can be placed here."
   no-recipe: "No recipe matches the current ingredient and weather."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 teapan:
-  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Tea Pan"
+  name: "Tea Pan"
   input-only: "Only tea pan ingredients can be placed here."
   no-recipe: "No tea pan recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 barrel:
-  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Fermentation Barrel"
+  name: "Fermentation Barrel"
   input-only: "Only fermentable tea ingredients can be placed here."
   no-recipe: "No fermentation recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 tea-stove:
-  title: "<white><shift:-9><image:cgap:tea_stove_gui><shift:-99>{progress}<shift:-98><reset>Tea Stove"
+  name: "Tea Stove"
   input-only: "Only dryable tea ingredients can be placed here."
   no-recipe: "No tea stove recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 cooking-pan:
-  title: "<white><shift:-9><image:cgap:tea_drying_pan_gui><shift:-143>{progress}<shift:-138><reset>Cooking Pan"
+  name: "Cooking Pan"
   input-only: "Only dryable tea ingredients can be placed here."
   no-recipe: "No cooking pan recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
 tea-table:
-  title: "<white><shift:-9><image:cgap:tea_table_gui><shift:-169><reset>Tea Table"
+  name: "Tea Table"

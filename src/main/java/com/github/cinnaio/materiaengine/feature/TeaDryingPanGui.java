@@ -52,6 +52,7 @@ public final class TeaDryingPanGui implements Listener {
     private int outputSlot;
     private String imageToken;
     private String imageChar;
+    private String titleTemplate;
     private int progressImageWidth;
     private int titleUpdateTicks;
     private Map<String, TeaDryingPanRecipe> recipes = Map.of();
@@ -80,14 +81,15 @@ public final class TeaDryingPanGui implements Listener {
             throw new IllegalStateException("Missing machines.tea-drying-pan config");
         }
 
-        this.blockId = config.getString("block-id", "cgap:tea_drying_pan");
-        this.filledProperty = config.getString("filled-property", "filled");
-        this.defaultProcessTicks = config.getInt("process-ticks", 100);
-        this.inputSlot = config.getInt("input-slot", 11);
-        this.outputSlot = config.getInt("output-slot", 15);
+        this.blockId = string(config, "block.id", config.getString("block-id", "cgap:tea_drying_pan"));
+        this.filledProperty = string(config, "block.filled-property", config.getString("filled-property", "filled"));
+        this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
+        this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
+        this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
         MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", "섀", 5, 108);
         this.imageToken = gui.imageToken();
         this.imageChar = gui.imageChar();
+        this.titleTemplate = gui.titleTemplate();
         this.progressImageWidth = gui.progressImageWidth();
         this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.recipes = loadRecipes(config);
@@ -533,7 +535,12 @@ public final class TeaDryingPanGui implements Listener {
     }
 
     private Component title(Player player, int pixels) {
-        return parseTitle(lang.text(player, "tea-drying-pan.title").replace("{progress}", progressChar(pixels)));
+        String template = titleTemplate.isBlank() ? lang.text(player, "tea-drying-pan.title") : titleTemplate;
+        String title = template
+                .replace("{image}", imageToken)
+                .replace("{progress}", progressChar(pixels))
+                .replace("{name}", lang.text(player, "tea-drying-pan.name"));
+        return parseTitle(title);
     }
 
     private String progressChar(int pixels) {
@@ -665,6 +672,14 @@ public final class TeaDryingPanGui implements Listener {
                 .replace("&a", "<green>")
                 .replace("&c", "<red>")
                 .replace("&e", "<yellow>");
+    }
+
+    private static String string(ConfigurationSection config, String path, String fallback) {
+        return config.isString(path) ? config.getString(path, fallback) : fallback;
+    }
+
+    private static int integer(ConfigurationSection config, String path, int fallback) {
+        return config.isInt(path) ? config.getInt(path) : fallback;
     }
 
     private void message(org.bukkit.command.CommandSender target, String key) {
