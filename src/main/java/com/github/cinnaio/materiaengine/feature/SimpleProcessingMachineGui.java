@@ -1,5 +1,6 @@
 package com.github.cinnaio.materiaengine.feature;
 
+import com.github.cinnaio.materiaengine.config.BlockStateConfig;
 import com.github.cinnaio.materiaengine.config.MachineGuiLayout;
 import com.github.cinnaio.materiaengine.data.MachineDataStore;
 import com.github.cinnaio.materiaengine.data.SimpleMachine;
@@ -55,11 +56,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private final Map<String, Integer> renderedProgress = new HashMap<>();
 
     private String blockId;
-    private String stateProperty;
-    private int defaultState;
-    private int filledState;
-    private int runningState;
-    private boolean booleanState;
+    private BlockStateConfig blockState;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
@@ -93,12 +90,8 @@ public final class SimpleProcessingMachineGui implements Listener {
         if (config == null) {
             throw new IllegalStateException("Missing " + configPath + " config");
         }
-        this.blockId = string(config, "block.id", config.getString("block-id", ""));
-        this.stateProperty = string(config, "block.state-property", config.getString("state-property", "stage"));
-        this.booleanState = string(config, "block.state-type", config.getString("state-type", "int")).equalsIgnoreCase("boolean");
-        this.defaultState = integer(config, "block.default-state", config.getInt("default-state", 0));
-        this.filledState = integer(config, "block.filled-state", config.getInt("filled-state", 1));
-        this.runningState = integer(config, "block.running-state", config.getInt("running-state", filledState));
+        this.blockId = config.getString("block.id", "");
+        this.blockState = BlockStateConfig.load(config, "stage", "int", 0, 1, 1);
         this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
         this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
         this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
@@ -545,22 +538,22 @@ public final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         int value = state(machine);
-        if (booleanState) {
-            craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, stateProperty, value != 0);
+        if (blockState.booleanType()) {
+            craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, blockState.property(), value != 0);
             return;
         }
-        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, stateProperty, value);
+        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, blockState.property(), value);
     }
 
     private int state(SimpleMachine machine) {
         if (machine.running()) {
-            return runningState;
+            return blockState.runningValue();
         }
         SimpleMachineRecipe outputRecipe = recipeByOutput(machine.contents());
         if (outputRecipe != null) {
             return outputRecipe.outputState();
         }
-        return hasStoredItem(machine) ? filledState : defaultState;
+        return hasStoredItem(machine) ? blockState.filledValue() : blockState.defaultValue();
     }
 
     private boolean hasStoredItem(SimpleMachine machine) {
@@ -633,7 +626,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             if (recipeSection == null) {
                 continue;
             }
-            SimpleMachineRecipe recipe = SimpleMachineRecipe.load(id, recipeSection, defaultProcessTicks, filledState);
+            SimpleMachineRecipe recipe = SimpleMachineRecipe.load(id, recipeSection, defaultProcessTicks, blockState.filledValue());
             if (recipe != null) {
                 loaded.put(id, recipe);
             }
@@ -673,16 +666,12 @@ public final class SimpleProcessingMachineGui implements Listener {
                 .replace("&e", "<yellow>");
     }
 
-    private static String string(ConfigurationSection config, String path, String fallback) {
-        return config.isString(path) ? config.getString(path, fallback) : fallback;
-    }
-
     private static int integer(ConfigurationSection config, String path, int fallback) {
         return config.isInt(path) ? config.getInt(path) : fallback;
     }
 
     private SimpleMachineRecipe fallbackRecipe() {
-        return new SimpleMachineRecipe("", "", 1, defaultProcessTicks, "", 1, filledState);
+        return new SimpleMachineRecipe("", "", 1, defaultProcessTicks, "", 1, blockState.filledValue());
     }
 
     private void message(org.bukkit.command.CommandSender target, String key) {

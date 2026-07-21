@@ -1,5 +1,6 @@
 package com.github.cinnaio.materiaengine.feature;
 
+import com.github.cinnaio.materiaengine.config.BlockStateConfig;
 import com.github.cinnaio.materiaengine.config.MachineGuiLayout;
 import com.github.cinnaio.materiaengine.data.TeaDryingPanDataStore;
 import com.github.cinnaio.materiaengine.data.TeaDryingPanMachine;
@@ -46,7 +47,7 @@ public final class TeaDryingPanGui implements Listener {
     private final Map<String, Inventory> openStorages = new HashMap<>();
     private final Map<String, Integer> renderedProgress = new HashMap<>();
     private String blockId;
-    private String filledProperty;
+    private BlockStateConfig blockState;
     private int defaultProcessTicks;
     private int inputSlot;
     private int outputSlot;
@@ -80,8 +81,8 @@ public final class TeaDryingPanGui implements Listener {
             throw new IllegalStateException("Missing machines.tea-drying-pan config");
         }
 
-        this.blockId = string(config, "block.id", config.getString("block-id", "cgap:tea_drying_pan"));
-        this.filledProperty = string(config, "block.filled-property", config.getString("filled-property", "filled"));
+        this.blockId = config.getString("block.id", "cgap:tea_drying_pan");
+        this.blockState = BlockStateConfig.load(config, "filled", "boolean", 0, 1, 1);
         this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
         this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
         this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
@@ -558,8 +559,12 @@ public final class TeaDryingPanGui implements Listener {
         if (world == null) {
             return;
         }
-        craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, filledProperty,
-                hasStoredItem(machine));
+        int value = hasStoredItem(machine) ? blockState.filledValue() : blockState.defaultValue();
+        if (blockState.booleanType()) {
+            craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, blockState.property(), value != 0);
+            return;
+        }
+        craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, blockState.property(), value);
     }
 
     private boolean hasStoredItem(TeaDryingPanMachine machine) {
@@ -665,10 +670,6 @@ public final class TeaDryingPanGui implements Listener {
                 .replace("&a", "<green>")
                 .replace("&c", "<red>")
                 .replace("&e", "<yellow>");
-    }
-
-    private static String string(ConfigurationSection config, String path, String fallback) {
-        return config.isString(path) ? config.getString(path, fallback) : fallback;
     }
 
     private static int integer(ConfigurationSection config, String path, int fallback) {

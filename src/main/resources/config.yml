@@ -2,7 +2,12 @@ machines:
   tea-drying-pan:
     block:
       id: cgap:tea_drying_pan
-      filled-property: filled
+      state:
+        property: filled
+        type: boolean
+        default: 0
+        filled: 1
+        running: 1
     processing:
       process-ticks: 100
     inventory:
@@ -48,10 +53,12 @@ machines:
   teapan:
     block:
       id: cgap:teapan
-      state-property: stage
-      default-state: 0
-      filled-state: 1
-      running-state: 1
+      state:
+        property: stage
+        type: int
+        default: 0
+        filled: 1
+        running: 1
     processing:
       process-ticks: 100
     inventory:
@@ -103,10 +110,12 @@ machines:
   barrel:
     block:
       id: cgap:barrel
-      state-property: stage
-      default-state: 0
-      filled-state: 1
-      running-state: 2
+      state:
+        property: stage
+        type: int
+        default: 0
+        filled: 1
+        running: 2
     processing:
       process-ticks: 160
     inventory:
@@ -149,11 +158,12 @@ machines:
   tea-stove:
     block:
       id: cgap:tea_stove
-      state-property: lit
-      state-type: boolean
-      default-state: 0
-      filled-state: 0
-      running-state: 1
+      state:
+        property: lit
+        type: boolean
+        default: 0
+        filled: 0
+        running: 1
     processing:
       process-ticks: 200
     inventory:
@@ -198,11 +208,12 @@ machines:
   cooking-pan:
     block:
       id: cgap:cooking_pan
-      state-property: lit
-      state-type: boolean
-      default-state: 0
-      filled-state: 0
-      running-state: 1
+      state:
+        property: lit
+        type: boolean
+        default: 0
+        filled: 0
+        running: 1
     processing:
       process-ticks: 100
     inventory:
