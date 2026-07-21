@@ -14,6 +14,10 @@ public final class SimpleMachine extends StoredMachine {
         super(worldId, x, y, z, contents, running, elapsed, runningRecipeId);
     }
 
+    public SimpleMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft) {
+        super(worldId, x, y, z, contents, running, elapsed, runningRecipeId, burnTimeLeft);
+    }
+
     public static SimpleMachine at(Location location) {
         return new SimpleMachine(location.getWorld().getUID(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }

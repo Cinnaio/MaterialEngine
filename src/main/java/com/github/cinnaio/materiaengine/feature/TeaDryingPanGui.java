@@ -50,6 +50,7 @@ public final class TeaDryingPanGui implements Listener {
     private BlockStateConfig blockState;
     private int defaultProcessTicks;
     private int inputSlot;
+    private int fuelSlot = -1;
     private int outputSlot;
     private String imageToken;
     private String titleTemplate;
@@ -85,6 +86,7 @@ public final class TeaDryingPanGui implements Listener {
         this.blockState = BlockStateConfig.load(config, "filled", "boolean", 0, 1, 1);
         this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
         this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
+        this.fuelSlot = config.isInt("inventory.fuel-slot") ? config.getInt("inventory.fuel-slot") : -1;
         this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
         MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", 5, 108);
         this.imageToken = gui.imageToken();
@@ -183,6 +185,18 @@ public final class TeaDryingPanGui implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (usesFuel() && slot == fuelSlot) {
+            if (event.getClick().isKeyboardClick()) {
+                event.setCancelled(true);
+                return;
+            }
+            if (MachineItems.hasItem(event.getCursor()) && !event.getCursor().getType().isFuel()) {
+                event.setCancelled(true);
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            return;
+        }
         if (slot == inputSlot) {
             if (event.getClick().isKeyboardClick()) {
                 event.setCancelled(true);
@@ -216,17 +230,22 @@ public final class TeaDryingPanGui implements Listener {
             return;
         }
         for (int slot : event.getRawSlots()) {
-            if (slot < event.getInventory().getSize() && slot != inputSlot && MachineItems.hasItem(event.getOldCursor())) {
+            if (slot < event.getInventory().getSize() && slot != inputSlot && slot != fuelSlot && MachineItems.hasItem(event.getOldCursor())) {
                 event.setCancelled(true);
                 return;
             }
+        }
+        if (usesFuel() && event.getRawSlots().contains(fuelSlot)
+                && MachineItems.hasItem(event.getOldCursor()) && !event.getOldCursor().getType().isFuel()) {
+            event.setCancelled(true);
+            return;
         }
         if (event.getRawSlots().contains(inputSlot) && !isAllowedInput(event.getOldCursor())) {
             event.setCancelled(true);
             message(event.getWhoClicked(), "tea-drying-pan.input-only");
             return;
         }
-        if (event.getRawSlots().contains(inputSlot)) {
+        if (event.getRawSlots().contains(inputSlot) || usesFuel() && event.getRawSlots().contains(fuelSlot)) {
             Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
         }
     }
@@ -249,6 +268,9 @@ public final class TeaDryingPanGui implements Listener {
     private void openMachine(Player player, TeaDryingPanMachine machine) {
         Inventory inventory = Bukkit.createInventory(new Holder(machine, false), TeaDryingPanMachine.SIZE, title(player, 0));
         inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+        if (usesFuel()) {
+            inventory.setItem(fuelSlot, MachineItems.cloneItem(machine.contents()[fuelSlot]));
+        }
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
         player.openInventory(inventory);
@@ -292,6 +314,9 @@ public final class TeaDryingPanGui implements Listener {
             }
             return false;
         }
+        if (!hasFuel(machine, recipe)) {
+            return false;
+        }
 
         machine.running(true);
         machine.elapsed(0);
@@ -303,6 +328,11 @@ public final class TeaDryingPanGui implements Listener {
     private void tick() {
         boolean dirty = false;
         for (TeaDryingPanMachine machine : machines.values()) {
+            if (usesFuel() && machine.burnTimeLeft() > 0) {
+                machine.burnTimeLeft(machine.burnTimeLeft() - 1);
+                updatePanState(machine);
+                dirty = true;
+            }
             if (!machine.running()) {
                 continue;
             }
@@ -338,6 +368,9 @@ public final class TeaDryingPanGui implements Listener {
             refreshOpenStorage(machine);
             if (openInventory != null) {
                 openInventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
+                if (usesFuel()) {
+                    openInventory.setItem(fuelSlot, MachineItems.cloneItem(machine.contents()[fuelSlot]));
+                }
                 render(openInventory, machine);
             }
             dirty = true;
@@ -381,7 +414,7 @@ public final class TeaDryingPanGui implements Listener {
 
     private boolean canStore(TeaDryingPanMachine machine, ItemStack output) {
         for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
-            if (i != inputSlot && MachineItems.canAccept(machine.contents()[i], output)) {
+            if (i != inputSlot && i != fuelSlot && MachineItems.canAccept(machine.contents()[i], output)) {
                 return true;
             }
         }
@@ -390,7 +423,7 @@ public final class TeaDryingPanGui implements Listener {
 
     private void store(ItemStack[] contents, ItemStack output) {
         for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
-            if (i != inputSlot && MachineItems.canAccept(contents[i], output)) {
+            if (i != inputSlot && i != fuelSlot && MachineItems.canAccept(contents[i], output)) {
                 if (!MachineItems.hasItem(contents[i])) {
                     contents[i] = output;
                     return;
@@ -418,7 +451,7 @@ public final class TeaDryingPanGui implements Listener {
             return;
         }
         for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
-            if (i != inputSlot) {
+            if (i != inputSlot && i != fuelSlot) {
                 holder.machine.contents()[i] = MachineItems.cloneItem(inventory.getItem(i));
             }
         }
@@ -427,7 +460,7 @@ public final class TeaDryingPanGui implements Listener {
 
     private void fillStorage(Inventory inventory, TeaDryingPanMachine machine) {
         for (int i = 0; i < TeaDryingPanMachine.SIZE; i++) {
-            inventory.setItem(i, i == inputSlot ? null : MachineItems.cloneItem(machine.contents()[i]));
+            inventory.setItem(i, i == inputSlot || i == fuelSlot ? null : MachineItems.cloneItem(machine.contents()[i]));
         }
     }
 
@@ -451,14 +484,15 @@ public final class TeaDryingPanGui implements Listener {
             return;
         }
         ItemStack current = event.getCurrentItem();
-        if (!isAllowedInput(current)) {
+        int targetSlot = isAllowedInput(current) ? inputSlot : usesFuel() && current.getType().isFuel() ? fuelSlot : -1;
+        if (targetSlot < 0) {
             return;
         }
-        ItemStack input = event.getInventory().getItem(inputSlot);
+        ItemStack input = event.getInventory().getItem(targetSlot);
         if (!MachineItems.canAccept(input, current)) {
             return;
         }
-        int moved = moveOneStack(current, input, event.getInventory());
+        int moved = moveOneStack(current, input, event.getInventory(), targetSlot);
         current.setAmount(current.getAmount() - moved);
         if (current.getAmount() <= 0) {
             event.setCurrentItem(null);
@@ -484,13 +518,13 @@ public final class TeaDryingPanGui implements Listener {
         start(machine, inventory, null);
     }
 
-    private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory) {
+    private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory, int targetSlot) {
         int space = !MachineItems.hasItem(input) ? source.getMaxStackSize() : input.getMaxStackSize() - input.getAmount();
         int moved = Math.min(source.getAmount(), space);
         if (!MachineItems.hasItem(input)) {
             ItemStack copy = source.clone();
             copy.setAmount(moved);
-            inventory.setItem(inputSlot, copy);
+            inventory.setItem(targetSlot, copy);
             return moved;
         }
         input.setAmount(input.getAmount() + moved);
@@ -551,6 +585,9 @@ public final class TeaDryingPanGui implements Listener {
             return;
         }
         holder.machine.contents()[inputSlot] = MachineItems.cloneItem(inventory.getItem(inputSlot));
+        if (usesFuel()) {
+            holder.machine.contents()[fuelSlot] = MachineItems.cloneItem(inventory.getItem(fuelSlot));
+        }
         updatePanState(holder.machine);
     }
 
@@ -559,7 +596,9 @@ public final class TeaDryingPanGui implements Listener {
         if (world == null) {
             return;
         }
-        int value = hasStoredItem(machine) ? blockState.filledValue() : blockState.defaultValue();
+        int value = machine.running() || usesFuel() && machine.burnTimeLeft() > 0
+                ? blockState.runningValue()
+                : hasStoredItem(machine) ? blockState.filledValue() : blockState.defaultValue();
         if (blockState.booleanType()) {
             craftEngineHook.setBooleanState(machine.location(world).getBlock(), blockId, blockState.property(), value != 0);
             return;
@@ -567,9 +606,29 @@ public final class TeaDryingPanGui implements Listener {
         craftEngineHook.setIntState(machine.location(world).getBlock(), blockId, blockState.property(), value);
     }
 
+    private boolean usesFuel() {
+        return fuelSlot >= 0;
+    }
+
+    private boolean hasFuel(TeaDryingPanMachine machine, TeaDryingPanRecipe recipe) {
+        if (!usesFuel() || machine.burnTimeLeft() >= recipe.processTicks()) {
+            return true;
+        }
+        ItemStack fuel = machine.contents()[fuelSlot];
+        if (!MachineItems.hasItem(fuel) || !fuel.getType().isFuel()) {
+            return false;
+        }
+        machine.burnTimeLeft(machine.burnTimeLeft() + MachineItems.burnTicks(fuel.getType()));
+        fuel.setAmount(fuel.getAmount() - 1);
+        if (fuel.getAmount() <= 0) {
+            machine.contents()[fuelSlot] = MachineItems.craftingRemainder(fuel.getType());
+        }
+        return machine.burnTimeLeft() >= recipe.processTicks();
+    }
+
     private boolean hasStoredItem(TeaDryingPanMachine machine) {
-        for (ItemStack item : machine.contents()) {
-            if (MachineItems.hasItem(item)) {
+        for (int i = 0; i < machine.contents().length; i++) {
+            if (i != fuelSlot && MachineItems.hasItem(machine.contents()[i])) {
                 return true;
             }
         }

@@ -26,6 +26,22 @@ public final class MachineItems {
         return item == null ? null : item.clone();
     }
 
+    public static int burnTicks(Material material) {
+        return switch (material) {
+            case LAVA_BUCKET -> 20000;
+            case COAL_BLOCK -> 16000;
+            case BLAZE_ROD -> 2400;
+            case COAL, CHARCOAL -> 1600;
+            case BAMBOO -> 50;
+            default -> material.isFuel() ? 300 : 0;
+        };
+    }
+
+    public static ItemStack craftingRemainder(Material material) {
+        Material remainder = material.getCraftingRemainingItem();
+        return remainder == null || remainder.isAir() ? null : new ItemStack(remainder);
+    }
+
     public static Material materialFromId(String id) {
         String materialId = id == null ? "" : id.toUpperCase().replace("MINECRAFT:", "");
         Material material = Material.matchMaterial(materialId);

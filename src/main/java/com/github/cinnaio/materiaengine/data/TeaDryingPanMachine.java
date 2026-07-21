@@ -16,6 +16,10 @@ public final class TeaDryingPanMachine extends StoredMachine {
         super(worldId, x, y, z, contents, running, elapsed, runningRecipeId);
     }
 
+    public TeaDryingPanMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft) {
+        super(worldId, x, y, z, contents, running, elapsed, runningRecipeId, burnTimeLeft);
+    }
+
     public static TeaDryingPanMachine at(Location location) {
         return new TeaDryingPanMachine(location.getWorld().getUID(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }

@@ -168,6 +168,7 @@ machines:
       process-ticks: 200
     inventory:
       input-slot: 12
+      fuel-slot: 13
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_stove_gui>
@@ -218,6 +219,7 @@ machines:
       process-ticks: 100
     inventory:
       input-slot: 12
+      fuel-slot: 13
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>

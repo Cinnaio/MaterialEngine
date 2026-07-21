@@ -17,7 +17,8 @@ public final class TeaDryingPanDataStore {
                 row.contents(),
                 row.running(),
                 row.elapsed(),
-                row.runningRecipeId()
+                row.runningRecipeId(),
+                row.burnTimeLeft()
         ));
     }
 

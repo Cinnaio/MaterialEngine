@@ -17,12 +17,17 @@ public class StoredMachine {
     private boolean running;
     private int elapsed;
     private String runningRecipeId;
+    private int burnTimeLeft;
 
     public StoredMachine(UUID worldId, int x, int y, int z) {
-        this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null);
+        this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null, 0);
     }
 
     public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
+        this(worldId, x, y, z, contents, running, elapsed, runningRecipeId, 0);
+    }
+
+    public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft) {
         this.worldId = worldId;
         this.x = x;
         this.y = y;
@@ -31,6 +36,7 @@ public class StoredMachine {
         this.running = running;
         this.elapsed = Math.max(0, elapsed);
         this.runningRecipeId = runningRecipeId;
+        this.burnTimeLeft = Math.max(0, burnTimeLeft);
     }
 
     public static String key(Location location) {
@@ -87,6 +93,14 @@ public class StoredMachine {
 
     public void runningRecipeId(String runningRecipeId) {
         this.runningRecipeId = runningRecipeId;
+    }
+
+    public int burnTimeLeft() {
+        return burnTimeLeft;
+    }
+
+    public void burnTimeLeft(int burnTimeLeft) {
+        this.burnTimeLeft = Math.max(0, burnTimeLeft);
     }
 
     public static ItemStack[] normalize(ItemStack[] source) {
