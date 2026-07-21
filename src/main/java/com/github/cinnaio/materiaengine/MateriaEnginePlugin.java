@@ -3,6 +3,7 @@ package com.github.cinnaio.materiaengine;
 import com.github.cinnaio.materiaengine.command.ReloadCommand;
 import com.github.cinnaio.materiaengine.data.TeaDryingPanDataStore;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
+import com.github.cinnaio.materiaengine.feature.StaticMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaDryingPanGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
@@ -13,6 +14,7 @@ import java.util.List;
 
 public final class MateriaEnginePlugin extends JavaPlugin {
     private TeaDryingPanGui teaDryingPanGui;
+    private StaticMachineGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines = new ArrayList<>();
     private MateriaEngineLang lang;
 
@@ -22,7 +24,9 @@ public final class MateriaEnginePlugin extends JavaPlugin {
         TeaDryingPanDataStore dataStore = new TeaDryingPanDataStore(this);
         this.lang = new MateriaEngineLang(this);
         this.teaDryingPanGui = new TeaDryingPanGui(this, craftEngineHook, dataStore, lang);
+        this.teaTableGui = new StaticMachineGui(this, craftEngineHook, lang, "machines.tea-table", "tea-table");
         getServer().getPluginManager().registerEvents(teaDryingPanGui, this);
+        getServer().getPluginManager().registerEvents(teaTableGui, this);
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.teapan", "teapans", "tea pan", "teapan"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
@@ -31,7 +35,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.cooking-pan", "cooking_pans", "cooking pan", "cooking-pan"));
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaDryingPanGui, processingMachines, lang));
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaDryingPanGui, teaTableGui, processingMachines, lang));
 
         getLogger().info("MateriaEngine enabled.");
     }

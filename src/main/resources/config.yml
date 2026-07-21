@@ -271,3 +271,9 @@ machines:
         output:
           id: cgap:puer_tea_leaf
           amount: 1
+
+  # 茶桌：暂时只打开展示 GUI，后续有交互规则再接加工逻辑。
+  tea-table:
+    block-id: cgap:tea_table
+    gui-image-token: <image:cgap:tea_table_gui>
+    gui-image-char: 섂

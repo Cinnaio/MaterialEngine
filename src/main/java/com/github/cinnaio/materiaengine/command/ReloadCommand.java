@@ -1,6 +1,7 @@
 package com.github.cinnaio.materiaengine.command;
 
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
+import com.github.cinnaio.materiaengine.feature.StaticMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaDryingPanGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
 import io.papermc.paper.command.brigadier.BasicCommand;
@@ -11,11 +12,13 @@ import java.util.List;
 
 public final class ReloadCommand implements BasicCommand {
     private final TeaDryingPanGui teaDryingPanGui;
+    private final StaticMachineGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines;
     private final MateriaEngineLang lang;
 
-    public ReloadCommand(TeaDryingPanGui teaDryingPanGui, List<SimpleProcessingMachineGui> processingMachines, MateriaEngineLang lang) {
+    public ReloadCommand(TeaDryingPanGui teaDryingPanGui, StaticMachineGui teaTableGui, List<SimpleProcessingMachineGui> processingMachines, MateriaEngineLang lang) {
         this.teaDryingPanGui = teaDryingPanGui;
+        this.teaTableGui = teaTableGui;
         this.processingMachines = processingMachines;
         this.lang = lang;
     }
@@ -27,6 +30,7 @@ public final class ReloadCommand implements BasicCommand {
             processingMachines.forEach(SimpleProcessingMachineGui::save);
             lang.reload();
             teaDryingPanGui.reload();
+            teaTableGui.reload();
             processingMachines.forEach(SimpleProcessingMachineGui::reload);
             source.getSender().sendMessage(lang.text(source.getSender(), "command.reload-success"));
             return;

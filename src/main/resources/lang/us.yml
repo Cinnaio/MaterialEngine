@@ -36,3 +36,6 @@ cooking-pan:
   no-recipe: "No cooking pan recipe matches this ingredient."
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
+
+tea-table:
+  title: "<white><shift:-9><image:cgap:tea_table_gui><shift:-169><reset>Tea Table"

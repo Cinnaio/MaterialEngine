@@ -36,3 +36,6 @@ cooking-pan:
   no-recipe: "当前原料没有可用的平底锅配方。"
   not-enough-input: "原料数量不足。"
   output-blocked: "请先取出产物。"
+
+tea-table:
+  title: "<white><shift:-9><image:cgap:tea_table_gui><shift:-169><reset>茶桌"
