@@ -23,6 +23,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class StaticMachineGui implements Listener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final int PROGRESS_CHAR_START = 0xE900;
 
     private final JavaPlugin plugin;
     private final CraftEngineHook craftEngineHook;
@@ -31,6 +32,7 @@ public final class StaticMachineGui implements Listener {
     private final String langPrefix;
     private String blockId;
     private String imageToken;
+    private String progressToken;
     private String titleTemplate;
 
     public StaticMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
@@ -50,6 +52,8 @@ public final class StaticMachineGui implements Listener {
         }
         this.blockId = string(config, "block.id", config.getString("block-id", ""));
         this.imageToken = string(config, "gui.image-token", config.getString("gui-image-token", config.getString("image-token", "")));
+        int progress = config.getInt("gui.progress", 0);
+        this.progressToken = progress > 0 ? new String(Character.toChars(PROGRESS_CHAR_START + progress)) : "";
         this.titleTemplate = string(config, "gui.title", config.getString("title", ""));
     }
 
@@ -88,6 +92,7 @@ public final class StaticMachineGui implements Listener {
         String template = titleTemplate.isBlank() ? lang.text(player, langPrefix + ".title") : titleTemplate;
         String parsed = template
                 .replace("{image}", imageToken)
+                .replace("{progress}", progressToken)
                 .replace("{name}", lang.text(player, langPrefix + ".name"))
                 .replace("<shift:-11>", "")
                 .replace("<shift:-8>", "");

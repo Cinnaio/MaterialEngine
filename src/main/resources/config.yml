@@ -261,4 +261,5 @@ machines:
       id: cgap:tea_table
     gui:
       image-token: <image:cgap:tea_table_gui>
-      title: "<white><shift:-9>{image}<shift:-169><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      progress: 108
