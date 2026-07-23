@@ -218,9 +218,9 @@ machines:
     processing:
       process-ticks: 100
     inventory:
-      input-slot: 12
-      fuel-slot: 13
-      output-slot: 14
+      input-slot: 2
+      fuel-slot: 20
+      output-slot: 15
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
