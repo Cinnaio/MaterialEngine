@@ -18,16 +18,21 @@ public class StoredMachine {
     private int elapsed;
     private String runningRecipeId;
     private int burnTimeLeft;
+    private int burnTimeTotal;
 
     public StoredMachine(UUID worldId, int x, int y, int z) {
-        this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null, 0);
+        this(worldId, x, y, z, new ItemStack[SIZE], false, 0, null, 0, 0);
     }
 
     public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId) {
-        this(worldId, x, y, z, contents, running, elapsed, runningRecipeId, 0);
+        this(worldId, x, y, z, contents, running, elapsed, runningRecipeId, 0, 0);
     }
 
     public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft) {
+        this(worldId, x, y, z, contents, running, elapsed, runningRecipeId, burnTimeLeft, 0);
+    }
+
+    public StoredMachine(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft, int burnTimeTotal) {
         this.worldId = worldId;
         this.x = x;
         this.y = y;
@@ -37,6 +42,7 @@ public class StoredMachine {
         this.elapsed = Math.max(0, elapsed);
         this.runningRecipeId = runningRecipeId;
         this.burnTimeLeft = Math.max(0, burnTimeLeft);
+        this.burnTimeTotal = Math.max(0, burnTimeTotal);
     }
 
     public static String key(Location location) {
@@ -101,6 +107,14 @@ public class StoredMachine {
 
     public void burnTimeLeft(int burnTimeLeft) {
         this.burnTimeLeft = Math.max(0, burnTimeLeft);
+    }
+
+    public int burnTimeTotal() {
+        return burnTimeTotal;
+    }
+
+    public void burnTimeTotal(int burnTimeTotal) {
+        this.burnTimeTotal = Math.max(0, burnTimeTotal);
     }
 
     public static ItemStack[] normalize(ItemStack[] source) {

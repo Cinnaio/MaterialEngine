@@ -62,7 +62,8 @@ public final class MachineDataStore<T extends StoredMachine> {
                         rows.getInt("running") != 0,
                         rows.getInt("elapsed"),
                         rows.getString("running_recipe"),
-                        rows.getInt("burn_time_left")
+                        rows.getInt("burn_time_left"),
+                        rows.getInt("burn_time_total")
                 ));
                 machines.put(machine.key(), machine);
             }
@@ -74,8 +75,8 @@ public final class MachineDataStore<T extends StoredMachine> {
 
     public void save(Collection<T> machines) {
         String sql = """
-                INSERT INTO %s(key, world, x, y, z, contents, running, elapsed, running_recipe, burn_time_left)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO %s(key, world, x, y, z, contents, running, elapsed, running_recipe, burn_time_left, burn_time_total)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(key) DO UPDATE SET
                   world = excluded.world,
                   x = excluded.x,
@@ -85,7 +86,8 @@ public final class MachineDataStore<T extends StoredMachine> {
                   running = excluded.running,
                   elapsed = excluded.elapsed,
                   running_recipe = excluded.running_recipe,
-                  burn_time_left = excluded.burn_time_left
+                  burn_time_left = excluded.burn_time_left,
+                  burn_time_total = excluded.burn_time_total
                 """.formatted(table);
         try (Connection connection = connect();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -100,6 +102,7 @@ public final class MachineDataStore<T extends StoredMachine> {
                 statement.setInt(8, machine.elapsed());
                 statement.setString(9, machine.runningRecipeId());
                 statement.setInt(10, machine.burnTimeLeft());
+                statement.setInt(11, machine.burnTimeTotal());
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -132,13 +135,15 @@ public final class MachineDataStore<T extends StoredMachine> {
                   running INTEGER NOT NULL DEFAULT 0,
                   elapsed INTEGER NOT NULL DEFAULT 0,
                   running_recipe TEXT,
-                  burn_time_left INTEGER NOT NULL DEFAULT 0
+                  burn_time_left INTEGER NOT NULL DEFAULT 0,
+                  burn_time_total INTEGER NOT NULL DEFAULT 0
                 )
                 """.formatted(table);
         try (Connection connection = connect();
              Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql);
             addColumnIfMissing(statement, "burn_time_left INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(statement, "burn_time_total INTEGER NOT NULL DEFAULT 0");
         } catch (SQLException error) {
             plugin.getLogger().severe("[MateriaEngine] Failed to init " + description + " database: " + error.getMessage());
         }
@@ -175,6 +180,6 @@ public final class MachineDataStore<T extends StoredMachine> {
         }
     }
 
-    public record Row(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft) {
+    public record Row(UUID worldId, int x, int y, int z, ItemStack[] contents, boolean running, int elapsed, String runningRecipeId, int burnTimeLeft, int burnTimeTotal) {
     }
 }

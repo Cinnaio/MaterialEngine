@@ -63,6 +63,8 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int outputSlot;
     private int progressImageWidth;
     private int progressCharStart;
+    private int fireCharStart = -1;
+    private int fireFrames;
     private int titleUpdateTicks;
     private String imageToken;
     private String titleTemplate;
@@ -82,7 +84,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.configPath = configPath;
         this.langPrefix = langPrefix;
         this.dataStore = new MachineDataStore<>(plugin, table, description, row -> new SimpleMachine(
-                row.worldId(), row.x(), row.y(), row.z(), row.contents(), row.running(), row.elapsed(), row.runningRecipeId(), row.burnTimeLeft()
+                row.worldId(), row.x(), row.y(), row.z(), row.contents(), row.running(), row.elapsed(), row.runningRecipeId(), row.burnTimeLeft(), row.burnTimeTotal()
         ));
         this.machines = dataStore.load();
         reload();
@@ -105,6 +107,8 @@ public final class SimpleProcessingMachineGui implements Listener {
         MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", 5, 108);
         this.progressImageWidth = gui.progressImageWidth();
         this.progressCharStart = integer(config, "gui.progress-char-start", config.getInt("progress-char-start", PROGRESS_CHAR_START));
+        this.fireCharStart = integer(config, "gui.fire-char-start", -1);
+        this.fireFrames = Math.max(1, integer(config, "gui.fire-frames", 4));
         this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.imageToken = gui.imageToken();
         this.titleTemplate = gui.titleTemplate();
@@ -284,7 +288,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void openMachine(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine, false), StoredMachine.SIZE, title(player, 0));
+        Inventory inventory = Bukkit.createInventory(new Holder(machine, false), StoredMachine.SIZE, title(player, progressPixels(machine), fireFrame(machine)));
         inventory.setItem(inputSlot, MachineItems.cloneItem(machine.contents()[inputSlot]));
         if (usesFuel()) {
             inventory.setItem(fuelSlot, MachineItems.cloneItem(machine.contents()[fuelSlot]));
@@ -340,6 +344,10 @@ public final class SimpleProcessingMachineGui implements Listener {
             if (usesFuel() && machine.burnTimeLeft() > 0) {
                 machine.burnTimeLeft(machine.burnTimeLeft() - 1);
                 updateBlockState(machine);
+                Inventory burningInventory = openMachines.get(machine.key());
+                if (burningInventory != null && !machine.running()) {
+                    updateTitle(burningInventory, machine);
+                }
                 dirty = true;
             }
             if (!machine.running()) {
@@ -566,13 +574,18 @@ public final class SimpleProcessingMachineGui implements Listener {
 
     private void updateTitle(Inventory inventory, SimpleMachine machine) {
         int pixels = progressPixels(machine);
+        int fire = fireFrame(machine);
+        int state = pixels * 100 + fire;
         Integer previous = renderedProgress.get(machine.key());
+        if (previous != null && previous == state) {
+            return;
+        }
         if (previous != null && machine.running() && machine.elapsed() % titleUpdateTicks != 0) {
             return;
         }
-        renderedProgress.put(machine.key(), pixels);
+        renderedProgress.put(machine.key(), state);
         for (HumanEntity viewer : inventory.getViewers()) {
-            Component newTitle = title(viewer instanceof Player player ? player : null, pixels);
+            Component newTitle = title(viewer instanceof Player player ? player : null, pixels, fire);
             viewer.getOpenInventory().setTitle(SECTION_SERIALIZER.serialize(newTitle));
         }
     }
@@ -625,6 +638,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             return false;
         }
         machine.burnTimeLeft(machine.burnTimeLeft() + MachineItems.burnTicks(fuel.getType()));
+        machine.burnTimeTotal(machine.burnTimeLeft());
         fuel.setAmount(fuel.getAmount() - 1);
         if (fuel.getAmount() <= 0) {
             machine.contents()[fuelSlot] = MachineItems.craftingRemainder(fuel.getType());
@@ -710,17 +724,30 @@ public final class SimpleProcessingMachineGui implements Listener {
         return loaded;
     }
 
-    private Component title(Player player, int pixels) {
+    private Component title(Player player, int pixels, int fire) {
         String template = titleTemplate.isBlank() ? lang.text(player, langPrefix + ".title") : titleTemplate;
         String title = template
                 .replace("{image}", imageToken)
                 .replace("{progress}", progressChar(pixels))
+                .replace("{fire}", fireChar(fire))
                 .replace("{name}", lang.text(player, langPrefix + ".name"));
         return parseTitle(title);
     }
 
     private String progressChar(int pixels) {
         return new String(Character.toChars(progressCharStart + pixels));
+    }
+
+    private String fireChar(int frame) {
+        return fireCharStart < 0 ? "" : new String(Character.toChars(fireCharStart + frame));
+    }
+
+    private int fireFrame(SimpleMachine machine) {
+        if (!usesFuel() || fireCharStart < 0 || machine.burnTimeLeft() <= 0) {
+            return 0;
+        }
+        int total = Math.max(machine.burnTimeTotal(), machine.burnTimeLeft());
+        return Math.max(1, Math.min(fireFrames, (int) Math.ceil(machine.burnTimeLeft() * (double) fireFrames / total)));
     }
 
     private Component parseTitle(String title) {

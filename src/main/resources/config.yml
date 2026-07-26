@@ -12,13 +12,16 @@ machines:
       process-ticks: 100
     inventory:
       input-slot: 12
+      fuel-slot: 13
       output-slot: 14
     gui:
-      image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-102>{progress}<shift:-98><reset>{name}"
+      image-token: <image:cgap:tea_stove_gui>
+      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-55>{fire}<shift:-54><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 5
       progress-char-start: 59776
+      fire-char-start: 59808
+      fire-frames: 4
     effects:
       particle: campfire_cosy_smoke
       particle-interval: 5
@@ -179,10 +182,12 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-94><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-55>{fire}<shift:-54><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 5
       progress-char-start: 59776
+      fire-char-start: 59808
+      fire-frames: 4
     recipes:
       broken-to-green:
         input:
