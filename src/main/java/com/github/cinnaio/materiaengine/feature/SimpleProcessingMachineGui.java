@@ -66,6 +66,11 @@ public final class SimpleProcessingMachineGui implements Listener {
     private int titleUpdateTicks;
     private String imageToken;
     private String titleTemplate;
+    private Particle particle;
+    private int particleInterval;
+    private int particleCount;
+    private double particleYOffset;
+    private double particleSpreadY;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
     private BukkitTask tickTask;
 
@@ -103,6 +108,11 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.titleUpdateTicks = Math.max(1, gui.titleUpdateTicks());
         this.imageToken = gui.imageToken();
         this.titleTemplate = gui.titleTemplate();
+        this.particle = parseParticle(config.getString("effects.particle", "HAPPY_VILLAGER"));
+        this.particleInterval = Math.max(1, config.getInt("effects.particle-interval", 10));
+        this.particleCount = Math.max(1, config.getInt("effects.particle-count", 1));
+        this.particleYOffset = config.getDouble("effects.particle-y-offset", 1.0);
+        this.particleSpreadY = config.getDouble("effects.particle-spread-y", 0.15);
         this.recipes = loadRecipes(config);
         machines.values().forEach(this::updateBlockState);
     }
@@ -293,7 +303,7 @@ public final class SimpleProcessingMachineGui implements Listener {
 
     private boolean start(SimpleMachine machine, org.bukkit.command.CommandSender sender) {
         ItemStack input = machine.contents()[inputSlot];
-        SimpleMachineRecipe recipe = findRecipe(input);
+        SimpleMachineRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
             if (sender != null) {
                 message(sender, "no-recipe");
@@ -385,14 +395,23 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void spawnParticle(SimpleMachine machine) {
-        if (machine.elapsed() % 10 != 0) {
+        if (machine.elapsed() % particleInterval != 0) {
             return;
         }
         World world = Bukkit.getWorld(machine.worldId());
         if (world == null) {
             return;
         }
-        world.spawnParticle(Particle.HAPPY_VILLAGER, machine.location(world).add(0.5, 1.0, 0.5), 1, 0.25, 0.15, 0.25, 0.01);
+        world.spawnParticle(particle, machine.location(world).add(0.5, particleYOffset, 0.5), particleCount, 0.25, particleSpreadY, 0.25, 0.01);
+    }
+
+    private Particle parseParticle(String name) {
+        try {
+            return Particle.valueOf(name.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException error) {
+            plugin.getLogger().warning("[MateriaEngine] Unknown particle '" + name + "' for " + configPath + ", using HAPPY_VILLAGER");
+            return Particle.HAPPY_VILLAGER;
+        }
     }
 
     private void consumeInput(SimpleMachine machine, SimpleMachineRecipe recipe) {
@@ -517,7 +536,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         syncMachine(inventory);
         if (machine.running()) {
             SimpleMachineRecipe recipe = recipes.get(machine.runningRecipeId());
-            if (recipe == null || findRecipe(machine.contents()[inputSlot]) == null) {
+            if (recipe == null || findRecipe(machine.contents()[inputSlot], Bukkit.getWorld(machine.worldId())) == null) {
                 machine.running(false);
                 machine.elapsed(0);
                 machine.runningRecipeId(null);
@@ -661,13 +680,13 @@ public final class SimpleProcessingMachineGui implements Listener {
         return itemId != null && recipes.values().stream().anyMatch(recipe -> recipe.acceptsInput(itemId));
     }
 
-    private SimpleMachineRecipe findRecipe(ItemStack input) {
+    private SimpleMachineRecipe findRecipe(ItemStack input, World world) {
         String itemId = craftEngineHook.getItemId(input);
         if (itemId == null) {
             return null;
         }
         return recipes.values().stream()
-                .filter(recipe -> recipe.matches(itemId) && input.getAmount() >= recipe.inputAmount())
+                .filter(recipe -> recipe.matches(itemId, world) && input.getAmount() >= recipe.inputAmount())
                 .findFirst()
                 .orElse(null);
     }
@@ -728,7 +747,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private SimpleMachineRecipe fallbackRecipe() {
-        return new SimpleMachineRecipe("", "", 1, defaultProcessTicks, "", 1, blockState.filledValue());
+        return new SimpleMachineRecipe("", "", 1, "any", defaultProcessTicks, "", 1, blockState.filledValue());
     }
 
     private void message(org.bukkit.command.CommandSender target, String key) {

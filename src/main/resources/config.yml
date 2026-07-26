@@ -18,6 +18,12 @@ machines:
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
+    effects:
+      particle: campfire_cosy_smoke
+      particle-interval: 5
+      particle-count: 2
+      particle-y-offset: 1.05
+      particle-spread-y: 0.12
     recipes:
       green-tea-clear:
         input:

@@ -1,10 +1,8 @@
 package com.github.cinnaio.materiaengine;
 
 import com.github.cinnaio.materiaengine.command.ReloadCommand;
-import com.github.cinnaio.materiaengine.data.TeaDryingPanDataStore;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.StaticMachineGui;
-import com.github.cinnaio.materiaengine.feature.TeaDryingPanGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class MateriaEnginePlugin extends JavaPlugin {
-    private TeaDryingPanGui teaDryingPanGui;
     private StaticMachineGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines = new ArrayList<>();
     private MateriaEngineLang lang;
@@ -21,19 +18,18 @@ public final class MateriaEnginePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         CraftEngineHook craftEngineHook = new CraftEngineHook();
-        TeaDryingPanDataStore dataStore = new TeaDryingPanDataStore(this);
         this.lang = new MateriaEngineLang(this);
-        this.teaDryingPanGui = new TeaDryingPanGui(this, craftEngineHook, dataStore, lang);
         this.teaTableGui = new StaticMachineGui(this, craftEngineHook, lang, "machines.tea-table", "tea-table");
-        getServer().getPluginManager().registerEvents(teaDryingPanGui, this);
         getServer().getPluginManager().registerEvents(teaTableGui, this);
+        registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
+                "machines.tea-drying-pan", "tea_drying_pans", "tea drying pan", "tea-drying-pan"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.teapan", "teapans", "tea pan", "teapan"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.barrel", "tea_barrels", "tea barrel", "barrel"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove"));
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaDryingPanGui, teaTableGui, processingMachines, lang));
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, lang));
 
         getLogger().info("MateriaEngine enabled.");
     }
@@ -45,9 +41,6 @@ public final class MateriaEnginePlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (teaDryingPanGui != null) {
-            teaDryingPanGui.shutdown();
-        }
         processingMachines.forEach(SimpleProcessingMachineGui::shutdown);
         getServer().getScheduler().cancelTasks(this);
         getLogger().info("MateriaEngine disabled.");
