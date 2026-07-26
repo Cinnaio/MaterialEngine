@@ -30,12 +30,5 @@ tea-stove:
   not-enough-input: "原料数量不足。"
   output-blocked: "请先取出产物。"
 
-cooking-pan:
-  name: "平底锅"
-  input-only: "这里只能放入可烘干的茶料。"
-  no-recipe: "当前原料没有可用的平底锅配方。"
-  not-enough-input: "原料数量不足。"
-  output-blocked: "请先取出产物。"
-
 tea-table:
   name: "茶桌"

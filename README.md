@@ -80,7 +80,6 @@ machines:
 | 茶盘 | `cgap:teapan` | 简单加工机器。 |
 | 发酵桶 | `cgap:barrel` | 简单加工机器。 |
 | 茶炉 | `cgap:tea_stove` | 需要燃料的简单加工机器，使用专用 GUI。 |
-| 平底锅 | `cgap:cooking_pan` | 需要燃料的简单加工机器。 |
 | 茶桌 | `cgap:tea_table` | GUI 展示入口。 |
 
 ## 关键类
@@ -106,7 +105,7 @@ E:\Developments\Projects\CGAP-RESOURCE
 当前配套资源版本：
 
 ```text
-0.13.3
+0.15.0
 ```
 
 已使用的主要资源：
@@ -116,7 +115,6 @@ cgap:tea_drying_pan
 cgap:teapan
 cgap:barrel
 cgap:tea_stove
-cgap:cooking_pan
 cgap:tea_table
 cgap:fresh_tea_leaf
 cgap:withered_tea_leaf

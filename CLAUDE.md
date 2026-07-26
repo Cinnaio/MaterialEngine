@@ -7,7 +7,7 @@ MateriaEngine 是 Paper/Folia 1.21.4 插件，用于承载 TeaStory 风格机器
 - 插件负责：机器交互、GUI、进度、配方逻辑、数据保存、Folia 安全调度。
 - CraftEngine 负责：物品、方块、模型、贴图、GUI 字体图标。
 - 当前 CraftEngine API 版本按服务器现状锁定为 `0.0.67`。
-- 当前配套 CGAP-RESOURCE 资源版本：`0.13.3`。
+- 当前配套 CGAP-RESOURCE 资源版本：`0.15.0`。
 
 ## 开发规则
 
@@ -92,7 +92,6 @@ machines:
 - `cgap:teapan`：茶盘，简单加工机器。
 - `cgap:barrel`：发酵桶，简单加工机器。
 - `cgap:tea_stove`：茶炉，需要燃料，使用专用 GUI 与 `tea_stove_progress_0..5`。
-- `cgap:cooking_pan`：平底锅，需要燃料。
 - `cgap:tea_table`：茶桌 GUI 展示入口。
 
 ## 关键类
@@ -125,7 +124,6 @@ cgap:tea_drying_pan
 cgap:teapan
 cgap:barrel
 cgap:tea_stove
-cgap:cooking_pan
 cgap:tea_table
 cgap:fresh_tea_leaf
 cgap:withered_tea_leaf
@@ -152,5 +150,5 @@ cgap:tea_stove_progress_0..5
 3. 确认 CraftEngine 已加载 CGAP-RESOURCE
 4. 放置机器方块
 5. 右击打开 GUI，潜行右击检查内部存储入口
-6. 放入允许输入；茶炉/平底锅同时放入燃料
+6. 放入允许输入；茶炉同时放入燃料
 7. 等待产出，确认进度条、方块状态、燃料余热和数据保存正常

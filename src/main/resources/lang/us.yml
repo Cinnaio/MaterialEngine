@@ -30,12 +30,5 @@ tea-stove:
   not-enough-input: "Not enough ingredients."
   output-blocked: "Take the output first."
 
-cooking-pan:
-  name: "Cooking Pan"
-  input-only: "Only dryable tea ingredients can be placed here."
-  no-recipe: "No cooking pan recipe matches this ingredient."
-  not-enough-input: "Not enough ingredients."
-  output-blocked: "Take the output first."
-
 tea-table:
   name: "Tea Table"
