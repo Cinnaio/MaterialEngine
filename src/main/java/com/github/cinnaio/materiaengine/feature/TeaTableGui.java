@@ -368,7 +368,7 @@ public final class TeaTableGui implements Listener {
             if (!MachineItems.hasItem(current)) {
                 continue;
             }
-            String consumedId = craftEngineHook.getItemId(current);
+            String consumedId = MachineItems.itemIdOf(craftEngineHook, current);
             current.setAmount(current.getAmount() - input.amount());
             if (current.getAmount() > 0) {
                 continue;
@@ -449,10 +449,7 @@ public final class TeaTableGui implements Listener {
         if (!MachineItems.hasItem(current)) {
             return;
         }
-        String itemId = craftEngineHook.getItemId(current);
-        if (itemId == null) {
-            return;
-        }
+        String itemId = MachineItems.itemIdOf(craftEngineHook, current);
         for (Map.Entry<String, Integer> slotEntry : inputSlots.entrySet()) {
             if (!isAllowedInputById(slotEntry.getKey(), itemId)) {
                 continue;
@@ -553,7 +550,7 @@ public final class TeaTableGui implements Listener {
     }
 
     private boolean isAllowedInput(String slotKey, ItemStack item) {
-        String itemId = craftEngineHook.getItemId(item);
+        String itemId = MachineItems.itemIdOf(craftEngineHook, item);
         return itemId != null && isAllowedInputById(slotKey, itemId);
     }
 
@@ -564,7 +561,7 @@ public final class TeaTableGui implements Listener {
     private TeaTableRecipe findRecipe(Map<String, ItemStack> slotItems) {
         Map<String, String> slotItemIds = new LinkedHashMap<>();
         for (Map.Entry<String, ItemStack> entry : slotItems.entrySet()) {
-            slotItemIds.put(entry.getKey(), craftEngineHook.getItemId(entry.getValue()));
+            slotItemIds.put(entry.getKey(), MachineItems.itemIdOf(craftEngineHook, entry.getValue()));
         }
         return recipes.values().stream().filter(recipe -> recipe.matches(slotItemIds)).findFirst().orElse(null);
     }

@@ -15,6 +15,14 @@ public final class MachineItems {
         return !hasItem(current) || current.isSimilar(incoming) && current.getAmount() + incoming.getAmount() <= current.getMaxStackSize();
     }
 
+    public static String itemIdOf(CraftEngineHook craftEngineHook, ItemStack item) {
+        if (!hasItem(item)) {
+            return null;
+        }
+        String customId = craftEngineHook.getItemId(item);
+        return customId != null ? customId : item.getType().getKey().toString();
+    }
+
     public static ItemStack createOutputItem(CraftEngineHook craftEngineHook, String id, int amount) {
         ItemStack custom = craftEngineHook.createItem(id);
         ItemStack output = custom != null ? custom : new ItemStack(materialFromId(id));

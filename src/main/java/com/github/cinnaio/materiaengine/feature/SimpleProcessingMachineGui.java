@@ -74,6 +74,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private double particleYOffset;
     private double particleSpreadY;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
+    private Map<String, Integer> fuelItems = Map.of();
     private BukkitTask tickTask;
 
     public SimpleProcessingMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
@@ -118,6 +119,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.particleYOffset = config.getDouble("effects.particle-y-offset", 1.0);
         this.particleSpreadY = config.getDouble("effects.particle-spread-y", 0.15);
         this.recipes = loadRecipes(config);
+        this.fuelItems = loadFuelItems(config);
         machines.values().forEach(this::updateBlockState);
     }
 
@@ -211,7 +213,7 @@ public final class SimpleProcessingMachineGui implements Listener {
                 event.setCancelled(true);
                 return;
             }
-            if (MachineItems.hasItem(event.getCursor()) && !event.getCursor().getType().isFuel()) {
+            if (MachineItems.hasItem(event.getCursor()) && !isFuelItem(event.getCursor())) {
                 event.setCancelled(true);
                 return;
             }
@@ -257,7 +259,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             }
         }
         if (usesFuel() && event.getRawSlots().contains(fuelSlot)
-                && MachineItems.hasItem(event.getOldCursor()) && !event.getOldCursor().getType().isFuel()) {
+                && MachineItems.hasItem(event.getOldCursor()) && !isFuelItem(event.getOldCursor())) {
             event.setCancelled(true);
             return;
         }
@@ -510,7 +512,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         ItemStack current = event.getCurrentItem();
-        int targetSlot = isAllowedInput(current) ? inputSlot : usesFuel() && current.getType().isFuel() ? fuelSlot : -1;
+        int targetSlot = isAllowedInput(current) ? inputSlot : usesFuel() && isFuelItem(current) ? fuelSlot : -1;
         if (targetSlot < 0) {
             return;
         }
@@ -634,16 +636,47 @@ public final class SimpleProcessingMachineGui implements Listener {
             return true;
         }
         ItemStack fuel = machine.contents()[fuelSlot];
-        if (!MachineItems.hasItem(fuel) || !fuel.getType().isFuel()) {
+        int fuelValue = fuelTicks(fuel);
+        if (fuelValue <= 0) {
             return false;
         }
-        machine.burnTimeLeft(machine.burnTimeLeft() + MachineItems.burnTicks(fuel.getType()));
+        machine.burnTimeLeft(machine.burnTimeLeft() + fuelValue);
         machine.burnTimeTotal(machine.burnTimeLeft());
         fuel.setAmount(fuel.getAmount() - 1);
         if (fuel.getAmount() <= 0) {
             machine.contents()[fuelSlot] = MachineItems.craftingRemainder(fuel.getType());
         }
         return machine.burnTimeLeft() >= recipe.processTicks();
+    }
+
+    private boolean isFuelItem(ItemStack item) {
+        return fuelTicks(item) > 0;
+    }
+
+    private int fuelTicks(ItemStack item) {
+        if (!MachineItems.hasItem(item)) {
+            return 0;
+        }
+        if (!fuelItems.isEmpty()) {
+            Integer custom = fuelItems.get(MachineItems.itemIdOf(craftEngineHook, item));
+            return custom != null ? custom : 0;
+        }
+        return MachineItems.burnTicks(item.getType());
+    }
+
+    private Map<String, Integer> loadFuelItems(ConfigurationSection config) {
+        Map<String, Integer> loaded = new LinkedHashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("fuel-items");
+        if (section == null) {
+            return loaded;
+        }
+        for (String id : section.getKeys(false)) {
+            int ticks = section.getInt(id, 0);
+            if (ticks > 0) {
+                loaded.put(id, ticks);
+            }
+        }
+        return loaded;
     }
 
     private boolean hasStoredItem(SimpleMachine machine) {
