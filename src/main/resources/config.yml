@@ -324,7 +324,7 @@ machines:
           id: cgap:yellow_tea_leaf
           amount: 1
 
-  # ===== 发酵桶：发酵粉驱动（fuel-items 为独占燃料表）=====
+  # ===== 发酵桶：发酵粉驱动（fuel-items 为独占燃料表），GUI 与茶盘同款布局 =====
   barrel:
     block:
       id: cgap:barrel
@@ -337,17 +337,14 @@ machines:
     processing:
       process-ticks: 160
     inventory:
-      input-slot: 2
-      fuel-slot: 20
-      output-slot: 15
+      input-slot: 12
+      fuel-slot: 13
+      output-slot: 14
     gui:
-      image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
+      image-token: <image:cgap:fermentation_barrel_gui>
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
-      progress-image-width: 24
-      progress-char-start: 59776
-      fire-char-start: 59808
-      fire-frames: 4
+      progress-image-width: 108
     effects:
       sounds:
         open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 0.9 }
@@ -479,7 +476,7 @@ machines:
       title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-106><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 24
-      progress-char-start: 59808
+      progress-char-start: 59776  # 复用茶炉 25 帧箭头；59808 起是火焰字符区，不能用作进度
     effects:
       sounds:
         open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.1 }

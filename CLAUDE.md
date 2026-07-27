@@ -110,7 +110,7 @@ machines:
 
 - `cgap:tea_drying_pan`：炒茶锅，原版燃料，杀青/炒青/误炒陷阱（8 条，不看天）。
 - `cgap:teapan`：茶盘，露天无燃料，看天萎凋/淋湿/挽救/闷黄（17 条）。
-- `cgap:barrel`：发酵桶，`fuel-items` 独占燃料（发酵粉 800 tick），碎茶三级发酵（3 条），复用茶炉 GUI 布局。
+- `cgap:barrel`：发酵桶，`fuel-items` 独占燃料（发酵粉 800 tick），碎茶三级发酵（3 条）；GUI 与茶盘同款（`fermentation_barrel_gui`，槽位 12 输入/13 发酵粉/14 输出，108px 长条进度，无火焰）。
 - `cgap:tea_stove`：茶炉，原版燃料，烘焙三种发酵叶 + 烘青白茶 + 蒸青抹茶（5 条）。
 - `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），内置 108 条配方：15 特化杯装（奶/柠/抹）+ 6 特化壶装 + 30 纯茶杯装 + 12 纯茶壶装 + 45 倒茶（满壶按耐久倒杯，瓷壶 4 杯/紫砂壶 8 杯）。
 
