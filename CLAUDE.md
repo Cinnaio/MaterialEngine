@@ -92,6 +92,7 @@ machines:
 - 茶桌输入带 `damage: N` 时不扣数量，改为对 Damageable meta 累加 N 耐久；耐久耗尽按候选的 `consume-replacement` 替换（如满壶倒空换空壶、茶筅打断消失）。用于茶筅损耗与壶装倒茶。
 - 茶桌按数量消耗且带 `consume-replacement` 的输入：返还数量 = 消耗数量（紫砂壶 2 茶包返 2 茶渣）；槽内有剩余时返还物放入茶桌储物格，放不下则掉落在方块上方。
 - 茶桌配方按声明槽位做**首匹配**（未声明的槽不参与匹配）：声明 tool/sugar 的特化配方（奶茶/柠檬茶/抹茶）必须排在同茶底的通用配方之前，否则会被通用配方抢先且不消耗奶糖。
+- 机器音效在 `effects.sounds` 下配置，全部走原版声音事件（零 ogg）：`open/close/start/finish/ambient/fuel-consume`，每项 `{ key, volume, pitch }`，`ambient` 额外支持 `interval`（tick 节流，默认 40）；缺项不播。茶桌无燃料槽故无 fuel-consume，声音在机器方块位置以 BLOCKS 类别播放。
 
 ## 当前机器
 
@@ -121,6 +122,7 @@ src/main/java/com/github/cinnaio/materiaengine/feature/SimpleProcessingMachineGu
 src/main/java/com/github/cinnaio/materiaengine/feature/TeaTableGui.java
 src/main/java/com/github/cinnaio/materiaengine/config/BlockStateConfig.java
 src/main/java/com/github/cinnaio/materiaengine/config/MachineGuiLayout.java
+src/main/java/com/github/cinnaio/materiaengine/config/MachineSounds.java
 src/main/java/com/github/cinnaio/materiaengine/data/MachineDataStore.java
 src/main/java/com/github/cinnaio/materiaengine/data/StoredMachine.java
 src/main/java/com/github/cinnaio/materiaengine/util/CraftEngineHook.java

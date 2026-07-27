@@ -29,6 +29,13 @@ machines:
       particle-count: 2
       particle-y-offset: 1.05
       particle-spread-y: 0.12
+      sounds:
+        open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.0 }
+        close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.0 }
+        start: { key: minecraft:item.flintandsteel.use, volume: 0.8, pitch: 1.0 }
+        finish: { key: minecraft:block.smoker.smoke, volume: 0.9, pitch: 1.0 }
+        ambient: { key: minecraft:block.campfire.crackle, volume: 0.6, pitch: 1.0, interval: 40 }
+        fuel-consume: { key: minecraft:item.flintandsteel.use, volume: 0.6, pitch: 0.8 }
     recipes:
       # --- 杀青：分级萎凋叶 -> 青叶（芽/一叶出 2，其余出 1）---
       fixation-bud:
@@ -118,6 +125,13 @@ machines:
       title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
+    effects:
+      sounds:
+        open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.2 }
+        close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.2 }
+        start: { key: minecraft:item.bone_meal.use, volume: 0.8, pitch: 1.0 }
+        finish: { key: minecraft:block.composter.ready, volume: 0.9, pitch: 1.1 }
+        ambient: { key: minecraft:block.cherry_leaves.step, volume: 0.5, pitch: 0.9, interval: 60 }
     recipes:
       # --- 萎凋（晴天）：分级鲜叶 -> 同级萎凋叶 ---
       wither-bud:
@@ -334,6 +348,14 @@ machines:
       progress-char-start: 59776
       fire-char-start: 59808
       fire-frames: 4
+    effects:
+      sounds:
+        open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 0.9 }
+        close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 0.9 }
+        start: { key: minecraft:block.grass.place, volume: 0.8, pitch: 0.8 }
+        finish: { key: minecraft:block.brewing_stand.brew, volume: 0.9, pitch: 0.9 }
+        ambient: { key: minecraft:block.bubble_column.bubble_pop, volume: 0.5, pitch: 0.8, interval: 30 }
+        fuel-consume: { key: minecraft:block.composter.fill_success, volume: 0.7, pitch: 1.0 }
     fuel-items:
       cgap:baking_powder: 800
     recipes:
@@ -389,6 +411,14 @@ machines:
       progress-char-start: 59776
       fire-char-start: 59808
       fire-frames: 4
+    effects:
+      sounds:
+        open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.0 }
+        close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.0 }
+        start: { key: minecraft:item.flintandsteel.use, volume: 0.8, pitch: 1.0 }
+        finish: { key: minecraft:block.brewing_stand.brew, volume: 0.9, pitch: 1.0 }
+        ambient: { key: minecraft:block.blast_furnace.fire_crackle, volume: 0.6, pitch: 1.0, interval: 40 }
+        fuel-consume: { key: minecraft:item.flintandsteel.use, volume: 0.6, pitch: 0.8 }
     recipes:
       # --- 烘焙：发酵叶 -> 成品茶 ---
       semi-to-oolong:
@@ -450,6 +480,12 @@ machines:
       title-update-ticks: 5
       progress-image-width: 24
       progress-char-start: 59808
+    effects:
+      sounds:
+        open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.1 }
+        close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.1 }
+        start: { key: minecraft:item.bottle.fill, volume: 0.8, pitch: 1.0 }
+        finish: { key: minecraft:entity.generic.drink, volume: 0.8, pitch: 1.0 }
     # 冲泡用开水：任意材质开水壶均可，消耗后按材质返还对应空壶
     boiled-water: &boiled_water
       any:

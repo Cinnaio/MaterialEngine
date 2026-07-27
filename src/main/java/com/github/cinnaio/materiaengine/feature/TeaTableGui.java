@@ -1,6 +1,7 @@
 package com.github.cinnaio.materiaengine.feature;
 
 import com.github.cinnaio.materiaengine.config.MachineGuiLayout;
+import com.github.cinnaio.materiaengine.config.MachineSounds;
 import com.github.cinnaio.materiaengine.data.MachineDataStore;
 import com.github.cinnaio.materiaengine.data.SimpleMachine;
 import com.github.cinnaio.materiaengine.data.StoredMachine;
@@ -64,6 +65,7 @@ public final class TeaTableGui implements Listener {
     private String imageToken;
     private String titleTemplate;
     private Map<String, TeaTableRecipe> recipes = Map.of();
+    private MachineSounds sounds = MachineSounds.none();
     private BukkitTask tickTask;
 
     public TeaTableGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
@@ -99,6 +101,7 @@ public final class TeaTableGui implements Listener {
         this.imageToken = gui.imageToken();
         this.titleTemplate = gui.titleTemplate();
         this.recipes = loadRecipes(config);
+        this.sounds = MachineSounds.load(config);
     }
 
     public void shutdown() {
@@ -259,6 +262,7 @@ public final class TeaTableGui implements Listener {
                 renderedProgress.remove(holder.machine.key());
             }
             save();
+            sounds.playClose(machineLocation(holder.machine));
         }
     }
 
@@ -270,6 +274,7 @@ public final class TeaTableGui implements Listener {
         openMachines.put(machine.key(), inventory);
         render(inventory, machine);
         player.openInventory(inventory);
+        sounds.playOpen(machineLocation(machine));
     }
 
     private void openStorage(Player player, SimpleMachine machine) {
@@ -277,6 +282,7 @@ public final class TeaTableGui implements Listener {
         fillStorage(inventory, machine);
         openStorages.put(machine.key(), inventory);
         player.openInventory(inventory);
+        sounds.playOpen(machineLocation(machine));
     }
 
     private boolean start(SimpleMachine machine, org.bukkit.command.CommandSender sender) {
@@ -304,6 +310,7 @@ public final class TeaTableGui implements Listener {
         machine.running(true);
         machine.elapsed(0);
         machine.runningRecipeId(recipe.id());
+        sounds.playStart(machineLocation(machine));
         save();
         return true;
     }
@@ -322,6 +329,9 @@ public final class TeaTableGui implements Listener {
                 continue;
             }
             machine.elapsed(machine.elapsed() + 1);
+            if (sounds.ambientDue(machine.elapsed())) {
+                sounds.playAmbient(machineLocation(machine));
+            }
             Inventory openInventory = openMachines.get(machine.key());
             if (openInventory != null) {
                 updateTitle(openInventory, machine);
@@ -340,6 +350,7 @@ public final class TeaTableGui implements Listener {
             }
             consumeInputs(machine, recipe);
             store(machine.contents(), output);
+            sounds.playFinish(machineLocation(machine));
             start(machine, null);
             refreshOpenStorage(machine);
             if (openInventory != null) {
@@ -425,6 +436,11 @@ public final class TeaTableGui implements Listener {
         if (world != null) {
             world.dropItemNaturally(machine.location(world).add(0.5, 1.0, 0.5), item);
         }
+    }
+
+    private Location machineLocation(SimpleMachine machine) {
+        World world = Bukkit.getWorld(machine.worldId());
+        return world == null ? null : machine.location(world).add(0.5, 0.5, 0.5);
     }
 
     private boolean canStore(SimpleMachine machine, ItemStack output) {
