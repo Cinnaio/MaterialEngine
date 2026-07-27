@@ -368,11 +368,12 @@ public final class TeaTableGui implements Listener {
             if (!MachineItems.hasItem(current)) {
                 continue;
             }
+            String consumedId = craftEngineHook.getItemId(current);
             current.setAmount(current.getAmount() - input.amount());
             if (current.getAmount() > 0) {
                 continue;
             }
-            String replacementId = input.consumeReplacement();
+            String replacementId = input.replacementFor(consumedId);
             if (replacementId != null && !replacementId.isBlank()) {
                 machine.contents()[slot] = MachineItems.createOutputItem(craftEngineHook, replacementId, 1);
             } else {

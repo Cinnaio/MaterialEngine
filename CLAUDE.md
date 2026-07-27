@@ -85,6 +85,7 @@ machines:
 - GUI 使用 `image-token`，不要回退为 CE 自动分配的 `image-char`。
 - GUI `title` 是布局控制字符串，放在 `config.yml`；`lang/*.yml` 只放可读名称和消息。
 - 方块状态统一使用 `block.state.property/type/default/filled/running`，不保留旧字段 fallback。
+- 茶桌配方输入支持一槽多候选：`inputs.<槽名>.any` 列表，每个候选可带自己的 `consume-replacement`（按实际消耗的物品返还空容器）；`id` 也可写成字符串列表，共享同一个 `consume-replacement`。开水壶候选集用 YAML 锚点 `&boiled_water` 复用（Paper 的 YamlConfiguration 别名数无上限）。
 
 ## 当前机器
 
@@ -92,7 +93,7 @@ machines:
 - `cgap:teapan`：茶盘，简单加工机器。
 - `cgap:barrel`：发酵桶，简单加工机器。
 - `cgap:tea_stove`：茶炉，需要燃料，使用专用 GUI 与 `tea_stove_progress_0..5`。
-- `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），复用茶炉 24px 进度条。
+- `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），复用茶炉 24px 进度条，内置 49 条冲泡配方（35 杯装 + 14 壶装）。
 
 ## 关键类
 
