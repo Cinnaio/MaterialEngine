@@ -93,6 +93,7 @@ machines:
 - 茶桌按数量消耗且带 `consume-replacement` 的输入：返还数量 = 消耗数量（紫砂壶 2 茶包返 2 茶渣）；槽内有剩余时返还物放入茶桌储物格，放不下则掉落在方块上方。
 - 茶桌配方按声明槽位做**首匹配**（未声明的槽不参与匹配）：声明 tool/sugar 的特化配方（奶茶/柠檬茶/抹茶）必须排在同茶底的通用配方之前，否则会被通用配方抢先且不消耗奶糖。
 - 机器音效在 `effects.sounds` 下配置，全部走原版声音事件（零 ogg）：`open/close/start/finish/ambient/fuel-consume`，每项 `{ key, volume, pitch }`，`ambient` 额外支持 `interval`（tick 节流，默认 40）；缺项不播。茶桌无燃料槽故无 fuel-consume，声音在机器方块位置以 BLOCKS 类别播放。
+- 开工失败提示（no-recipe/not-enough-input/output-blocked）只发给触发交互的玩家（点击/拖拽/Shift 投料路径），tick 自动续做保持静默；简单机器要求输入槽非空、茶桌要求某条配方声明的槽位全部已放物（nearMiss）才发 no-recipe，避免摆料阶段刷屏。储物 GUI 标题走 lang 根键 `storage-title`。
 
 ## 当前机器
 
@@ -117,7 +118,6 @@ machines:
 
 ```text
 src/main/java/com/github/cinnaio/materiaengine/MateriaEnginePlugin.java
-src/main/java/com/github/cinnaio/materiaengine/feature/TeaDryingPanGui.java
 src/main/java/com/github/cinnaio/materiaengine/feature/SimpleProcessingMachineGui.java
 src/main/java/com/github/cinnaio/materiaengine/feature/TeaTableGui.java
 src/main/java/com/github/cinnaio/materiaengine/config/BlockStateConfig.java

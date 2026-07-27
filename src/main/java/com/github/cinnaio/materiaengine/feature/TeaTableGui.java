@@ -200,14 +200,14 @@ public final class TeaTableGui implements Listener {
                 message(event.getWhoClicked(), "input-only");
                 return;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), event.getWhoClicked()));
             return;
         }
         if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
             event.setCancelled(true);
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+        Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), null));
     }
 
     @EventHandler
@@ -245,7 +245,7 @@ public final class TeaTableGui implements Listener {
         }
         boolean touchesInput = event.getRawSlots().stream().anyMatch(inputSlots::containsValue);
         if (touchesInput) {
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), event.getWhoClicked()));
         }
     }
 
@@ -278,7 +278,7 @@ public final class TeaTableGui implements Listener {
     }
 
     private void openStorage(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine, true), StoredMachine.SIZE, Component.text("物品栏"));
+        Inventory inventory = Bukkit.createInventory(new Holder(machine, true), StoredMachine.SIZE, Component.text(lang.text(player, "storage-title")));
         fillStorage(inventory, machine);
         openStorages.put(machine.key(), inventory);
         player.openInventory(inventory);
@@ -289,7 +289,7 @@ public final class TeaTableGui implements Listener {
         Map<String, ItemStack> slotItems = currentInputItems(machine);
         TeaTableRecipe recipe = findRecipe(slotItems);
         if (recipe == null) {
-            if (sender != null) {
+            if (sender != null && nearMiss(slotItems)) {
                 message(sender, "no-recipe");
             }
             return false;
@@ -526,7 +526,7 @@ public final class TeaTableGui implements Listener {
                 event.setCurrentItem(null);
             }
             syncMachine(event.getInventory());
-            syncAndTryAutoStart(machine, event.getInventory());
+            syncAndTryAutoStart(machine, event.getInventory(), event.getWhoClicked());
             return;
         }
     }
@@ -544,7 +544,7 @@ public final class TeaTableGui implements Listener {
         return moved;
     }
 
-    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory) {
+    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory, org.bukkit.command.CommandSender actor) {
         syncMachine(inventory);
         if (machine.running()) {
             TeaTableRecipe recipe = recipes.get(machine.runningRecipeId());
@@ -557,7 +557,7 @@ public final class TeaTableGui implements Listener {
             save();
             return;
         }
-        start(machine, null);
+        start(machine, actor);
     }
 
     private void syncMachine(Inventory inventory) {
@@ -625,6 +625,12 @@ public final class TeaTableGui implements Listener {
             slotItemIds.put(entry.getKey(), MachineItems.itemIdOf(craftEngineHook, entry.getValue()));
         }
         return recipes.values().stream().filter(recipe -> recipe.matches(slotItemIds)).findFirst().orElse(null);
+    }
+
+    // 仅当某条配方声明的所有槽位都已放入物品（但 id 不匹配）时才算"接近成品"，避免逐格摆料阶段刷无配方提示
+    private boolean nearMiss(Map<String, ItemStack> slotItems) {
+        return recipes.values().stream().anyMatch(recipe ->
+                recipe.inputs().keySet().stream().allMatch(slot -> MachineItems.hasItem(slotItems.get(slot))));
     }
 
     private String slotKey(int slot) {

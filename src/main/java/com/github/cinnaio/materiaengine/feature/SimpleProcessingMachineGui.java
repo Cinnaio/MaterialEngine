@@ -220,7 +220,7 @@ public final class SimpleProcessingMachineGui implements Listener {
                 event.setCancelled(true);
                 return;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), event.getWhoClicked()));
             return;
         }
         if (slot == inputSlot) {
@@ -233,14 +233,14 @@ public final class SimpleProcessingMachineGui implements Listener {
                 message(event.getWhoClicked(), "input-only");
                 return;
             }
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), event.getWhoClicked()));
             return;
         }
         if (MachineItems.hasItem(event.getCursor()) || event.getClick().isKeyboardClick()) {
             event.setCancelled(true);
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+        Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), null));
     }
 
     @EventHandler
@@ -272,7 +272,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             return;
         }
         if (event.getRawSlots().contains(inputSlot) || usesFuel() && event.getRawSlots().contains(fuelSlot)) {
-            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory()));
+            Bukkit.getScheduler().runTask(plugin, () -> syncAndTryAutoStart(holder.machine, event.getInventory(), event.getWhoClicked()));
         }
     }
 
@@ -306,7 +306,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     }
 
     private void openStorage(Player player, SimpleMachine machine) {
-        Inventory inventory = Bukkit.createInventory(new Holder(machine, true), StoredMachine.SIZE, Component.text("物品栏"));
+        Inventory inventory = Bukkit.createInventory(new Holder(machine, true), StoredMachine.SIZE, Component.text(lang.text(player, "storage-title")));
         fillStorage(inventory, machine);
         openStorages.put(machine.key(), inventory);
         player.openInventory(inventory);
@@ -317,7 +317,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         ItemStack input = machine.contents()[inputSlot];
         SimpleMachineRecipe recipe = findRecipe(input, Bukkit.getWorld(machine.worldId()));
         if (recipe == null) {
-            if (sender != null) {
+            if (sender != null && MachineItems.hasItem(input)) {
                 message(sender, "no-recipe");
             }
             return false;
@@ -542,7 +542,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             event.setCurrentItem(null);
         }
         syncMachine(event.getInventory());
-        syncAndTryAutoStart(machine, event.getInventory());
+        syncAndTryAutoStart(machine, event.getInventory(), event.getWhoClicked());
     }
 
     private int moveOneStack(ItemStack source, ItemStack input, Inventory inventory, int targetSlot) {
@@ -558,7 +558,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         return moved;
     }
 
-    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory) {
+    private void syncAndTryAutoStart(SimpleMachine machine, Inventory inventory, org.bukkit.command.CommandSender actor) {
         syncMachine(inventory);
         if (machine.running()) {
             SimpleMachineRecipe recipe = recipes.get(machine.runningRecipeId());
@@ -571,7 +571,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             save();
             return;
         }
-        start(machine, null);
+        start(machine, actor);
     }
 
     private void syncMachine(Inventory inventory) {

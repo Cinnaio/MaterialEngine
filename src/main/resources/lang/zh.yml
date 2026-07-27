@@ -2,6 +2,8 @@ command:
   reload-success: "§a[MateriaEngine] 配置已重载。"
   usage-reload: "§e用法: /materiaengine reload"
 
+storage-title: "物品栏"
+
 tea-drying-pan:
   name: "炒茶（煮饭）锅"
   input-only: "这里只能放入炒茶原料。"

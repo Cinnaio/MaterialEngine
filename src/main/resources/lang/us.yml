@@ -2,6 +2,8 @@ command:
   reload-success: "§a[MateriaEngine] Config reloaded."
   usage-reload: "§eUsage: /materiaengine reload"
 
+storage-title: "Storage"
+
 tea-drying-pan:
   name: "Tea Drying Pan"
   input-only: "Only tea-processing ingredients can be placed here."
