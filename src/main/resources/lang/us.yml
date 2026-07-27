@@ -32,3 +32,7 @@ tea-stove:
 
 tea-table:
   name: "Tea Table"
+  input-only: "Only the matching brewing ingredient can be placed in this slot."
+  no-recipe: "No tea table recipe matches the current ingredients."
+  not-enough-input: "Not enough ingredients."
+  output-blocked: "Take the output first."

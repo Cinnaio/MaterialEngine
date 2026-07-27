@@ -32,3 +32,7 @@ tea-stove:
 
 tea-table:
   name: "茶桌"
+  input-only: "该槽位只能放入对应的冲泡原料。"
+  no-recipe: "当前原料组合没有可用的茶桌配方。"
+  not-enough-input: "原料数量不足。"
+  output-blocked: "请先取出产物。"

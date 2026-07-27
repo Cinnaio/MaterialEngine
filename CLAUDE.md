@@ -92,7 +92,7 @@ machines:
 - `cgap:teapan`：茶盘，简单加工机器。
 - `cgap:barrel`：发酵桶，简单加工机器。
 - `cgap:tea_stove`：茶炉，需要燃料，使用专用 GUI 与 `tea_stove_progress_0..5`。
-- `cgap:tea_table`：茶桌 GUI 展示入口。
+- `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），复用茶炉 24px 进度条。
 
 ## 关键类
 

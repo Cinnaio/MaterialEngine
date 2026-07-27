@@ -11,13 +11,13 @@ machines:
     processing:
       process-ticks: 100
     inventory:
-      input-slot: 12
-      fuel-slot: 13
-      output-slot: 14
+      input-slot: 2
+      fuel-slot: 20
+      output-slot: 15
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-52>{fire}<shift:-54><reset>{name}"
-      title-update-ticks: 2
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
+      title-update-ticks: 5
       progress-image-width: 24
       progress-char-start: 59776
       fire-char-start: 59808
@@ -76,7 +76,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     recipes:
@@ -133,7 +133,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     recipes:
@@ -177,12 +177,12 @@ machines:
     processing:
       process-ticks: 200
     inventory:
-      input-slot: 12
-      fuel-slot: 13
-      output-slot: 14
+      input-slot: 2
+      fuel-slot: 20
+      output-slot: 15
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-52>{fire}<shift:-54><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
       title-update-ticks: 2
       progress-image-width: 24
       progress-char-start: 59776
@@ -221,7 +221,19 @@ machines:
   tea-table:
     block:
       id: cgap:tea_table
+    processing:
+      process-ticks: 100
+    inventory:
+      tool-slot: 1
+      sugar-slot: 2
+      cup-slot: 6
+      water-slot: 10
+      leaf-slot: 11
+      output-slot: 15
     gui:
       image-token: <image:cgap:tea_table_gui>
-      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
-      progress: 108
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-106><reset>{name}"
+      title-update-ticks: 5
+      progress-image-width: 24
+      progress-char-start: 59808
+    recipes: {}
