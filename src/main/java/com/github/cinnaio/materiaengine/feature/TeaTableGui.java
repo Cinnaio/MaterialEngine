@@ -13,6 +13,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -374,15 +375,17 @@ public final class TeaTableGui implements Listener {
                 machine.contents()[slot] = damageInput(current, input, consumedId);
                 continue;
             }
-            current.setAmount(current.getAmount() - input.amount());
-            if (current.getAmount() > 0) {
+            String replacementId = input.replacementFor(consumedId);
+            ItemStack replacement = replacementId == null || replacementId.isBlank() ? null
+                    : MachineItems.createOutputItem(craftEngineHook, replacementId, input.amount());
+            int remaining = current.getAmount() - input.amount();
+            if (remaining <= 0) {
+                machine.contents()[slot] = replacement;
                 continue;
             }
-            String replacementId = input.replacementFor(consumedId);
-            if (replacementId != null && !replacementId.isBlank()) {
-                machine.contents()[slot] = MachineItems.createOutputItem(craftEngineHook, replacementId, 1);
-            } else {
-                machine.contents()[slot] = null;
+            current.setAmount(remaining);
+            if (replacement != null) {
+                storeLoose(machine, replacement);
             }
         }
     }
@@ -400,6 +403,28 @@ public final class TeaTableGui implements Listener {
         String replacementId = input.replacementFor(consumedId);
         return replacementId == null || replacementId.isBlank() ? null
                 : MachineItems.createOutputItem(craftEngineHook, replacementId, 1);
+    }
+
+    private void storeLoose(SimpleMachine machine, ItemStack item) {
+        ItemStack[] contents = machine.contents();
+        for (int i = 0; i < contents.length; i++) {
+            if (i == outputSlot || inputSlots.containsValue(i)) {
+                continue;
+            }
+            ItemStack current = contents[i];
+            if (!MachineItems.hasItem(current)) {
+                contents[i] = item;
+                return;
+            }
+            if (current.isSimilar(item) && current.getAmount() + item.getAmount() <= current.getMaxStackSize()) {
+                current.setAmount(current.getAmount() + item.getAmount());
+                return;
+            }
+        }
+        World world = Bukkit.getWorld(machine.worldId());
+        if (world != null) {
+            world.dropItemNaturally(machine.location(world).add(0.5, 1.0, 0.5), item);
+        }
     }
 
     private boolean canStore(SimpleMachine machine, ItemStack output) {

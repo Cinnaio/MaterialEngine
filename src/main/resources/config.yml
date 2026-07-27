@@ -1,4 +1,5 @@
 machines:
+  # ===== 炒茶锅：火炒杀青 / 炒青（原版燃料）=====
   tea-drying-pan:
     block:
       id: cgap:tea_drying_pan
@@ -29,37 +30,75 @@ machines:
       particle-y-offset: 1.05
       particle-spread-y: 0.12
     recipes:
-      green-tea-clear:
+      # --- 杀青：分级萎凋叶 -> 青叶（芽/一叶出 2，其余出 1）---
+      fixation-bud:
         input:
-          id: cgap:tea_leaf
+          id: cgap:withered_tea_leaf_bud
           amount: 1
-        conditions:
-          weather: clear
         process-ticks: 100
         output:
-          id: cgap:green_tea_leaf
+          id: cgap:tea_leaf
+          amount: 2
+      fixation-bud-leaf1:
+        input:
+          id: cgap:withered_tea_leaf_bud_leaf1
           amount: 1
-      green-tea-rain:
+        process-ticks: 100
+        output:
+          id: cgap:tea_leaf
+          amount: 2
+      fixation-bud-leaf2:
+        input:
+          id: cgap:withered_tea_leaf_bud_leaf2
+          amount: 1
+        process-ticks: 100
+        output:
+          id: cgap:tea_leaf
+          amount: 1
+      fixation-bud-leaf3:
+        input:
+          id: cgap:withered_tea_leaf_bud_leaf3
+          amount: 1
+        process-ticks: 100
+        output:
+          id: cgap:tea_leaf
+          amount: 1
+      fixation-old-leaf:
+        input:
+          id: cgap:withered_tea_leaf_old_leaf
+          amount: 1
+        process-ticks: 100
+        output:
+          id: cgap:tea_leaf
+          amount: 1
+      fixation-plain:
+        input:
+          id: cgap:withered_tea_leaf
+          amount: 1
+        process-ticks: 100
+        output:
+          id: cgap:tea_leaf
+          amount: 1
+      # --- 炒青：青叶 -> 绿茶 ---
+      pan-firing-green:
         input:
           id: cgap:tea_leaf
           amount: 1
-        conditions:
-          weather: rain
         process-ticks: 120
         output:
           id: cgap:green_tea_leaf
           amount: 1
-      green-tea-thunder:
+      # --- 误炒：湿叶下锅只会炒焦（焦叶可回收成发酵粉）---
+      scorch-wet:
         input:
-          id: cgap:tea_leaf
+          id: cgap:wet_tea_leaf
           amount: 1
-        conditions:
-          weather: thunder
-        process-ticks: 140
+        process-ticks: 80
         output:
-          id: cgap:green_tea_leaf
+          id: cgap:failed_fixation_tea_leaf
           amount: 1
 
+  # ===== 茶盘：露天看天（无燃料）——萎凋 / 淋湿 / 挽救 / 闷黄 =====
   teapan:
     block:
       id: cgap:teapan
@@ -80,43 +119,198 @@ machines:
       title-update-ticks: 5
       progress-image-width: 108
     recipes:
-      fresh-to-withered:
+      # --- 萎凋（晴天）：分级鲜叶 -> 同级萎凋叶 ---
+      wither-bud:
         input:
-          id: cgap:fresh_tea_leaf
+          id: cgap:fresh_tea_leaf_bud
           amount: 1
+        conditions:
+          weather: clear
         process-ticks: 100
         output-state: 3
         output:
-          id: cgap:withered_tea_leaf
+          id: cgap:withered_tea_leaf_bud
           amount: 1
-      withered-to-wet:
+      wither-bud-leaf1:
         input:
-          id: cgap:withered_tea_leaf
+          id: cgap:fresh_tea_leaf_bud_leaf1
           amount: 1
+        conditions:
+          weather: clear
         process-ticks: 100
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf_bud_leaf1
+          amount: 1
+      wither-bud-leaf2:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf2
+          amount: 1
+        conditions:
+          weather: clear
+        process-ticks: 100
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf_bud_leaf2
+          amount: 1
+      wither-bud-leaf3:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf3
+          amount: 1
+        conditions:
+          weather: clear
+        process-ticks: 100
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf_bud_leaf3
+          amount: 1
+      wither-old-leaf:
+        input:
+          id: cgap:fresh_tea_leaf_old_leaf
+          amount: 1
+        conditions:
+          weather: clear
+        process-ticks: 100
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf_old_leaf
+          amount: 1
+      # --- 淋湿（雨天）：鲜叶失去分级变湿叶 ---
+      soak-bud-rain:
+        input:
+          id: cgap:fresh_tea_leaf_bud
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 60
         output-state: 2
         output:
           id: cgap:wet_tea_leaf
           amount: 1
-      wet-to-yellow:
+      soak-bud-leaf1-rain:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf1
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 60
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-bud-leaf2-rain:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf2
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 60
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-bud-leaf3-rain:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf3
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 60
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-old-leaf-rain:
+        input:
+          id: cgap:fresh_tea_leaf_old_leaf
+          amount: 1
+        conditions:
+          weather: rain
+        process-ticks: 60
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      # --- 淋湿（雷暴，更快淋透）---
+      soak-bud-thunder:
+        input:
+          id: cgap:fresh_tea_leaf_bud
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 40
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-bud-leaf1-thunder:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf1
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 40
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-bud-leaf2-thunder:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf2
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 40
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-bud-leaf3-thunder:
+        input:
+          id: cgap:fresh_tea_leaf_bud_leaf3
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 40
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      soak-old-leaf-thunder:
+        input:
+          id: cgap:fresh_tea_leaf_old_leaf
+          amount: 1
+        conditions:
+          weather: thunder
+        process-ticks: 40
+        output-state: 2
+        output:
+          id: cgap:wet_tea_leaf
+          amount: 1
+      # --- 挽救：湿叶晴天摊晾成无分级萎凋叶 ---
+      rescue-wet:
         input:
           id: cgap:wet_tea_leaf
           amount: 1
-        process-ticks: 120
+        conditions:
+          weather: clear
+        process-ticks: 140
+        output-state: 3
+        output:
+          id: cgap:withered_tea_leaf
+          amount: 1
+      # --- 闷黄：绿茶堆闷成黄茶（不看天）---
+      yellowing:
+        input:
+          id: cgap:green_tea_leaf
+          amount: 1
+        process-ticks: 160
         output-state: 4
         output:
           id: cgap:yellow_tea_leaf
           amount: 1
-      green-to-matcha:
-        input:
-          id: cgap:green_tea_leaf
-          amount: 1
-        process-ticks: 120
-        output-state: 5
-        output:
-          id: cgap:matcha_tea_leaf
-          amount: 1
 
+  # ===== 发酵桶：发酵粉驱动（fuel-items 为独占燃料表）=====
   barrel:
     block:
       id: cgap:barrel
@@ -129,13 +323,19 @@ machines:
     processing:
       process-ticks: 160
     inventory:
-      input-slot: 12
-      output-slot: 14
+      input-slot: 2
+      fuel-slot: 20
+      output-slot: 15
     gui:
-      image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      image-token: <image:cgap:tea_stove_gui>
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
       title-update-ticks: 5
-      progress-image-width: 108
+      progress-image-width: 24
+      progress-char-start: 59776
+      fire-char-start: 59808
+      fire-frames: 4
+    fuel-items:
+      cgap:baking_powder: 800
     recipes:
       broken-to-semi:
         input:
@@ -165,6 +365,7 @@ machines:
           id: cgap:deep_fermented_tea_leaf
           amount: 1
 
+  # ===== 茶炉：烘焙 / 烘青 / 蒸青（原版燃料）=====
   tea-stove:
     block:
       id: cgap:tea_stove
@@ -189,13 +390,7 @@ machines:
       fire-char-start: 59808
       fire-frames: 4
     recipes:
-      broken-to-green:
-        input:
-          id: cgap:broken_tea_leaf
-          amount: 1
-        output:
-          id: cgap:green_tea_leaf
-          amount: 1
+      # --- 烘焙：发酵叶 -> 成品茶 ---
       semi-to-oolong:
         input:
           id: cgap:semi_fermented_tea_leaf
@@ -217,7 +412,26 @@ machines:
         output:
           id: cgap:puer_tea_leaf
           amount: 1
+      # --- 烘青：青叶低温烘干 -> 白茶 ---
+      tea-leaf-to-white:
+        input:
+          id: cgap:tea_leaf
+          amount: 1
+        process-ticks: 160
+        output:
+          id: cgap:white_tea_leaf
+          amount: 1
+      # --- 蒸青：绿茶蒸后碾磨 -> 抹茶 ---
+      green-to-matcha:
+        input:
+          id: cgap:green_tea_leaf
+          amount: 1
+        process-ticks: 160
+        output:
+          id: cgap:matcha_tea_leaf
+          amount: 1
 
+  # ===== 茶桌：冲泡 + 倒茶（无燃料）=====
   tea-table:
     block:
       id: cgap:tea_table
@@ -243,308 +457,790 @@ machines:
         - { id: cgap:boiled_water_pot_porcelain, consume-replacement: cgap:pot_porcelain }
         - { id: cgap:boiled_water_pot_iron, consume-replacement: cgap:pot_iron }
         - { id: cgap:boiled_water_pot_zisha, consume-replacement: cgap:pot_zisha }
+    # 倒茶用满壶：两种材质均可，每倒一杯扣 1 耐久，倒空替换为对应空壶
+    pour-kettles:
+      black-tea: &pour_black
+        damage: 1
+        any:
+          - { id: cgap:black_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:black_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      green-tea: &pour_green
+        damage: 1
+        any:
+          - { id: cgap:green_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:green_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      oolong-tea: &pour_oolong
+        damage: 1
+        any:
+          - { id: cgap:oolong_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:oolong_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      puer-tea: &pour_puer
+        damage: 1
+        any:
+          - { id: cgap:puer_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:puer_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      white-tea: &pour_white
+        damage: 1
+        any:
+          - { id: cgap:white_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:white_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      yellow-tea: &pour_yellow
+        damage: 1
+        any:
+          - { id: cgap:yellow_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:yellow_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      matcha-drink: &pour_matcha
+        damage: 1
+        any:
+          - { id: cgap:matcha_drink_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:matcha_drink_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      milk-tea: &pour_milk
+        damage: 1
+        any:
+          - { id: cgap:milk_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:milk_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      lemon-tea: &pour_lemon
+        damage: 1
+        any:
+          - { id: cgap:lemon_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:lemon_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+    # 配方按声明槽位做首匹配：特化配方（奶/柠/抹茶，声明 tool/sugar）必须排在同茶底的通用配方之前
     recipes:
-      # ===== 杯装茶：茶叶 + 开水 + 空杯 =====
+      # ===== 杯装奶茶：红茶×2 + 奶桶（返空桶）+ 糖×3 =====
+      milk-tea-glass:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_glass }
+        output: { id: cgap:milk_tea_glass }
+      milk-tea-stone:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_stone }
+        output: { id: cgap:milk_tea_stone }
+      milk-tea-wood:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_wood }
+        output: { id: cgap:milk_tea_wood }
+      milk-tea-porcelain:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_porcelain }
+        output: { id: cgap:milk_tea_porcelain }
+      milk-tea-zisha:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_zisha }
+        output: { id: cgap:milk_tea_zisha }
+      # ===== 杯装柠檬茶：红茶×2 + 柠檬 + 糖×3 =====
+      lemon-tea-glass:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_glass }
+        output: { id: cgap:lemon_tea_glass }
+      lemon-tea-stone:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_stone }
+        output: { id: cgap:lemon_tea_stone }
+      lemon-tea-wood:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_wood }
+        output: { id: cgap:lemon_tea_wood }
+      lemon-tea-porcelain:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_porcelain }
+        output: { id: cgap:lemon_tea_porcelain }
+      lemon-tea-zisha:
+        inputs:
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_zisha }
+        output: { id: cgap:lemon_tea_zisha }
+      # ===== 杯装抹茶：抹茶×2 + 茶筅（耗 1 耐久）+ 糖×3 =====
+      matcha-drink-glass:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 2 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_glass }
+        process-ticks: 120
+        output: { id: cgap:matcha_drink_glass }
+      matcha-drink-stone:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 2 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_stone }
+        process-ticks: 120
+        output: { id: cgap:matcha_drink_stone }
+      matcha-drink-wood:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 2 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_wood }
+        process-ticks: 120
+        output: { id: cgap:matcha_drink_wood }
+      matcha-drink-porcelain:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 2 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 120
+        output: { id: cgap:matcha_drink_porcelain }
+      matcha-drink-zisha:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 2 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 3 }
+          water: *boiled_water
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 120
+        output: { id: cgap:matcha_drink_zisha }
+      # ===== 壶装奶茶 =====
+      milk-tea-porcelain-kettle:
+        inputs:
+          leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:black_tea_residue }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 12 }
+          water: *boiled_water
+          cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
+        output: { id: cgap:milk_tea_porcelain_kettle }
+      milk-tea-zisha-kettle:
+        inputs:
+          leaf: { id: cgap:black_tea_bag, amount: 2, consume-replacement: cgap:black_tea_residue }
+          tool: { id: minecraft:milk_bucket, consume-replacement: minecraft:bucket }
+          sugar: { id: minecraft:sugar, amount: 24 }
+          water: *boiled_water
+          cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
+        output: { id: cgap:milk_tea_zisha_kettle }
+      # ===== 壶装柠檬茶 =====
+      lemon-tea-porcelain-kettle:
+        inputs:
+          leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:black_tea_residue }
+          tool: { id: cgap:lemon }
+          sugar: { id: minecraft:sugar, amount: 12 }
+          water: *boiled_water
+          cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
+        output: { id: cgap:lemon_tea_porcelain_kettle }
+      lemon-tea-zisha-kettle:
+        inputs:
+          leaf: { id: cgap:black_tea_bag, amount: 2, consume-replacement: cgap:black_tea_residue }
+          tool: { id: cgap:lemon, amount: 2 }
+          sugar: { id: minecraft:sugar, amount: 24 }
+          water: *boiled_water
+          cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
+        output: { id: cgap:lemon_tea_zisha_kettle }
+      # ===== 壶装抹茶：散粉直接冲点 =====
+      matcha-drink-porcelain-kettle:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 6 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 12 }
+          water: *boiled_water
+          cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
+        output: { id: cgap:matcha_drink_porcelain_kettle }
+      matcha-drink-zisha-kettle:
+        inputs:
+          leaf: { id: cgap:matcha_tea_leaf, amount: 12 }
+          tool: { id: cgap:tea_whisk, damage: 1 }
+          sugar: { id: minecraft:sugar, amount: 24 }
+          water: *boiled_water
+          cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
+        output: { id: cgap:matcha_drink_zisha_kettle }
+      # ===== 杯装纯茶：干茶×2 + 开水 + 空杯 =====
       # --- 玻璃杯 ---
       black-tea-glass:
         inputs:
-          leaf: { id: cgap:black_tea_leaf }
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:black_tea_glass }
       green-tea-glass:
         inputs:
-          leaf: { id: cgap:green_tea_leaf }
+          leaf: { id: cgap:green_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:green_tea_glass }
       oolong-tea-glass:
         inputs:
-          leaf: { id: cgap:oolong_tea_leaf }
+          leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:oolong_tea_glass }
       puer-tea-glass:
         inputs:
-          leaf: { id: cgap:puer_tea_leaf }
+          leaf: { id: cgap:puer_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:puer_tea_glass }
       white-tea-glass:
         inputs:
-          leaf: { id: cgap:white_tea_leaf }
+          leaf: { id: cgap:white_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:white_tea_glass }
       yellow-tea-glass:
         inputs:
-          leaf: { id: cgap:yellow_tea_leaf }
+          leaf: { id: cgap:yellow_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:yellow_tea_glass }
-      matcha-drink-glass:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf }
-          water: *boiled_water
-          cup: { id: cgap:cup_glass }
-        output: { id: cgap:matcha_drink_glass }
       # --- 石杯 ---
       black-tea-stone:
         inputs:
-          leaf: { id: cgap:black_tea_leaf }
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:black_tea_stone }
       green-tea-stone:
         inputs:
-          leaf: { id: cgap:green_tea_leaf }
+          leaf: { id: cgap:green_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:green_tea_stone }
       oolong-tea-stone:
         inputs:
-          leaf: { id: cgap:oolong_tea_leaf }
+          leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:oolong_tea_stone }
       puer-tea-stone:
         inputs:
-          leaf: { id: cgap:puer_tea_leaf }
+          leaf: { id: cgap:puer_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:puer_tea_stone }
       white-tea-stone:
         inputs:
-          leaf: { id: cgap:white_tea_leaf }
+          leaf: { id: cgap:white_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:white_tea_stone }
       yellow-tea-stone:
         inputs:
-          leaf: { id: cgap:yellow_tea_leaf }
+          leaf: { id: cgap:yellow_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:yellow_tea_stone }
-      matcha-drink-stone:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf }
-          water: *boiled_water
-          cup: { id: cgap:cup_stone }
-        output: { id: cgap:matcha_drink_stone }
       # --- 木杯 ---
       black-tea-wood:
         inputs:
-          leaf: { id: cgap:black_tea_leaf }
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:black_tea_wood }
       green-tea-wood:
         inputs:
-          leaf: { id: cgap:green_tea_leaf }
+          leaf: { id: cgap:green_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:green_tea_wood }
       oolong-tea-wood:
         inputs:
-          leaf: { id: cgap:oolong_tea_leaf }
+          leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:oolong_tea_wood }
       puer-tea-wood:
         inputs:
-          leaf: { id: cgap:puer_tea_leaf }
+          leaf: { id: cgap:puer_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:puer_tea_wood }
       white-tea-wood:
         inputs:
-          leaf: { id: cgap:white_tea_leaf }
+          leaf: { id: cgap:white_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:white_tea_wood }
       yellow-tea-wood:
         inputs:
-          leaf: { id: cgap:yellow_tea_leaf }
+          leaf: { id: cgap:yellow_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:yellow_tea_wood }
-      matcha-drink-wood:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf }
-          water: *boiled_water
-          cup: { id: cgap:cup_wood }
-        output: { id: cgap:matcha_drink_wood }
       # --- 瓷杯 ---
       black-tea-porcelain:
         inputs:
-          leaf: { id: cgap:black_tea_leaf }
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:black_tea_porcelain }
       green-tea-porcelain:
         inputs:
-          leaf: { id: cgap:green_tea_leaf }
+          leaf: { id: cgap:green_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:green_tea_porcelain }
       oolong-tea-porcelain:
         inputs:
-          leaf: { id: cgap:oolong_tea_leaf }
+          leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:oolong_tea_porcelain }
       puer-tea-porcelain:
         inputs:
-          leaf: { id: cgap:puer_tea_leaf }
+          leaf: { id: cgap:puer_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:puer_tea_porcelain }
       white-tea-porcelain:
         inputs:
-          leaf: { id: cgap:white_tea_leaf }
+          leaf: { id: cgap:white_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:white_tea_porcelain }
       yellow-tea-porcelain:
         inputs:
-          leaf: { id: cgap:yellow_tea_leaf }
+          leaf: { id: cgap:yellow_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:yellow_tea_porcelain }
-      matcha-drink-porcelain:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf }
-          water: *boiled_water
-          cup: { id: cgap:cup_porcelain }
-        output: { id: cgap:matcha_drink_porcelain }
       # --- 紫砂杯 ---
       black-tea-zisha:
         inputs:
-          leaf: { id: cgap:black_tea_leaf }
+          leaf: { id: cgap:black_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:black_tea_zisha }
       green-tea-zisha:
         inputs:
-          leaf: { id: cgap:green_tea_leaf }
+          leaf: { id: cgap:green_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:green_tea_zisha }
       oolong-tea-zisha:
         inputs:
-          leaf: { id: cgap:oolong_tea_leaf }
+          leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:oolong_tea_zisha }
       puer-tea-zisha:
         inputs:
-          leaf: { id: cgap:puer_tea_leaf }
+          leaf: { id: cgap:puer_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:puer_tea_zisha }
       white-tea-zisha:
         inputs:
-          leaf: { id: cgap:white_tea_leaf }
+          leaf: { id: cgap:white_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:white_tea_zisha }
       yellow-tea-zisha:
         inputs:
-          leaf: { id: cgap:yellow_tea_leaf }
+          leaf: { id: cgap:yellow_tea_leaf, amount: 2 }
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:yellow_tea_zisha }
-      matcha-drink-zisha:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf }
-          water: *boiled_water
-          cup: { id: cgap:cup_zisha }
-        output: { id: cgap:matcha_drink_zisha }
-      # ===== 壶装茶：茶包 + 开水 + 空壶（茶包消耗后返还空茶包）=====
-      # --- 瓷壶 ---
+      # ===== 壶装纯茶：茶包 + 开水 + 空壶（茶包消耗后返对应茶渣）=====
+      # --- 瓷壶：茶包×1 ---
       black-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:black_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:black_tea_porcelain_kettle }
       green-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:green_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:green_tea_bag, consume-replacement: cgap:green_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:green_tea_porcelain_kettle }
       oolong-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:oolong_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:oolong_tea_bag, consume-replacement: cgap:oolong_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:oolong_tea_porcelain_kettle }
       puer-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:puer_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:puer_tea_bag, consume-replacement: cgap:puer_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:puer_tea_porcelain_kettle }
       white-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:white_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:white_tea_bag, consume-replacement: cgap:white_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:white_tea_porcelain_kettle }
       yellow-tea-porcelain-kettle:
         inputs:
-          leaf: { id: cgap:yellow_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:yellow_tea_bag, consume-replacement: cgap:yellow_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
         output: { id: cgap:yellow_tea_porcelain_kettle }
-      # 壶装抹茶无茶包，用 6 份抹茶粉直接冲泡（对齐茶包含 6 干叶的成本）
-      matcha-drink-porcelain-kettle:
-        inputs:
-          leaf: { id: cgap:matcha_tea_leaf, amount: 6 }
-          water: *boiled_water
-          cup: { id: cgap:empty_porcelain_kettle }
-        output: { id: cgap:matcha_drink_porcelain_kettle }
-      # --- 紫砂壶 ---
+      # --- 紫砂壶：茶包×2 ---
       black-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:black_tea_bag, amount: 2, consume-replacement: cgap:black_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:black_tea_zisha_kettle }
       green-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:green_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:green_tea_bag, amount: 2, consume-replacement: cgap:green_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:green_tea_zisha_kettle }
       oolong-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:oolong_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:oolong_tea_bag, amount: 2, consume-replacement: cgap:oolong_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:oolong_tea_zisha_kettle }
       puer-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:puer_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:puer_tea_bag, amount: 2, consume-replacement: cgap:puer_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:puer_tea_zisha_kettle }
       white-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:white_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:white_tea_bag, amount: 2, consume-replacement: cgap:white_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:white_tea_zisha_kettle }
       yellow-tea-zisha-kettle:
         inputs:
-          leaf: { id: cgap:yellow_tea_bag, consume-replacement: cgap:empty_tea_bag }
+          leaf: { id: cgap:yellow_tea_bag, amount: 2, consume-replacement: cgap:yellow_tea_residue }
           water: *boiled_water
           cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
         output: { id: cgap:yellow_tea_zisha_kettle }
-      matcha-drink-zisha-kettle:
+      # ===== 倒茶：满壶（扣 1 耐久，倒空换空壶）+ 空杯 -> 杯装成品 =====
+      # --- 红茶 ---
+      pour-black-tea-glass:
         inputs:
-          leaf: { id: cgap:matcha_tea_leaf, amount: 6 }
-          water: *boiled_water
-          cup: { id: cgap:empty_zisha_kettle }
-        output: { id: cgap:matcha_drink_zisha_kettle }
+          water: *pour_black
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:black_tea_glass }
+      pour-black-tea-stone:
+        inputs:
+          water: *pour_black
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:black_tea_stone }
+      pour-black-tea-wood:
+        inputs:
+          water: *pour_black
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:black_tea_wood }
+      pour-black-tea-porcelain:
+        inputs:
+          water: *pour_black
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:black_tea_porcelain }
+      pour-black-tea-zisha:
+        inputs:
+          water: *pour_black
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:black_tea_zisha }
+      # --- 绿茶 ---
+      pour-green-tea-glass:
+        inputs:
+          water: *pour_green
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:green_tea_glass }
+      pour-green-tea-stone:
+        inputs:
+          water: *pour_green
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:green_tea_stone }
+      pour-green-tea-wood:
+        inputs:
+          water: *pour_green
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:green_tea_wood }
+      pour-green-tea-porcelain:
+        inputs:
+          water: *pour_green
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:green_tea_porcelain }
+      pour-green-tea-zisha:
+        inputs:
+          water: *pour_green
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:green_tea_zisha }
+      # --- 乌龙茶 ---
+      pour-oolong-tea-glass:
+        inputs:
+          water: *pour_oolong
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:oolong_tea_glass }
+      pour-oolong-tea-stone:
+        inputs:
+          water: *pour_oolong
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:oolong_tea_stone }
+      pour-oolong-tea-wood:
+        inputs:
+          water: *pour_oolong
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:oolong_tea_wood }
+      pour-oolong-tea-porcelain:
+        inputs:
+          water: *pour_oolong
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:oolong_tea_porcelain }
+      pour-oolong-tea-zisha:
+        inputs:
+          water: *pour_oolong
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:oolong_tea_zisha }
+      # --- 普洱茶 ---
+      pour-puer-tea-glass:
+        inputs:
+          water: *pour_puer
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:puer_tea_glass }
+      pour-puer-tea-stone:
+        inputs:
+          water: *pour_puer
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:puer_tea_stone }
+      pour-puer-tea-wood:
+        inputs:
+          water: *pour_puer
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:puer_tea_wood }
+      pour-puer-tea-porcelain:
+        inputs:
+          water: *pour_puer
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:puer_tea_porcelain }
+      pour-puer-tea-zisha:
+        inputs:
+          water: *pour_puer
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:puer_tea_zisha }
+      # --- 白茶 ---
+      pour-white-tea-glass:
+        inputs:
+          water: *pour_white
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:white_tea_glass }
+      pour-white-tea-stone:
+        inputs:
+          water: *pour_white
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:white_tea_stone }
+      pour-white-tea-wood:
+        inputs:
+          water: *pour_white
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:white_tea_wood }
+      pour-white-tea-porcelain:
+        inputs:
+          water: *pour_white
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:white_tea_porcelain }
+      pour-white-tea-zisha:
+        inputs:
+          water: *pour_white
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:white_tea_zisha }
+      # --- 黄茶 ---
+      pour-yellow-tea-glass:
+        inputs:
+          water: *pour_yellow
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:yellow_tea_glass }
+      pour-yellow-tea-stone:
+        inputs:
+          water: *pour_yellow
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:yellow_tea_stone }
+      pour-yellow-tea-wood:
+        inputs:
+          water: *pour_yellow
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:yellow_tea_wood }
+      pour-yellow-tea-porcelain:
+        inputs:
+          water: *pour_yellow
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:yellow_tea_porcelain }
+      pour-yellow-tea-zisha:
+        inputs:
+          water: *pour_yellow
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:yellow_tea_zisha }
+      # --- 抹茶 ---
+      pour-matcha-drink-glass:
+        inputs:
+          water: *pour_matcha
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:matcha_drink_glass }
+      pour-matcha-drink-stone:
+        inputs:
+          water: *pour_matcha
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:matcha_drink_stone }
+      pour-matcha-drink-wood:
+        inputs:
+          water: *pour_matcha
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:matcha_drink_wood }
+      pour-matcha-drink-porcelain:
+        inputs:
+          water: *pour_matcha
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:matcha_drink_porcelain }
+      pour-matcha-drink-zisha:
+        inputs:
+          water: *pour_matcha
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:matcha_drink_zisha }
+      # --- 奶茶 ---
+      pour-milk-tea-glass:
+        inputs:
+          water: *pour_milk
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:milk_tea_glass }
+      pour-milk-tea-stone:
+        inputs:
+          water: *pour_milk
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:milk_tea_stone }
+      pour-milk-tea-wood:
+        inputs:
+          water: *pour_milk
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:milk_tea_wood }
+      pour-milk-tea-porcelain:
+        inputs:
+          water: *pour_milk
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:milk_tea_porcelain }
+      pour-milk-tea-zisha:
+        inputs:
+          water: *pour_milk
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:milk_tea_zisha }
+      # --- 柠檬茶 ---
+      pour-lemon-tea-glass:
+        inputs:
+          water: *pour_lemon
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:lemon_tea_glass }
+      pour-lemon-tea-stone:
+        inputs:
+          water: *pour_lemon
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:lemon_tea_stone }
+      pour-lemon-tea-wood:
+        inputs:
+          water: *pour_lemon
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:lemon_tea_wood }
+      pour-lemon-tea-porcelain:
+        inputs:
+          water: *pour_lemon
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:lemon_tea_porcelain }
+      pour-lemon-tea-zisha:
+        inputs:
+          water: *pour_lemon
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:lemon_tea_zisha }
