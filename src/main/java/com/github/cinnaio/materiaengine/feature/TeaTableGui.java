@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -369,6 +370,10 @@ public final class TeaTableGui implements Listener {
                 continue;
             }
             String consumedId = MachineItems.itemIdOf(craftEngineHook, current);
+            if (input.damage() > 0) {
+                machine.contents()[slot] = damageInput(current, input, consumedId);
+                continue;
+            }
             current.setAmount(current.getAmount() - input.amount());
             if (current.getAmount() > 0) {
                 continue;
@@ -380,6 +385,21 @@ public final class TeaTableGui implements Listener {
                 machine.contents()[slot] = null;
             }
         }
+    }
+
+    private ItemStack damageInput(ItemStack current, TeaTableRecipe.Input input, String consumedId) {
+        if (current.getItemMeta() instanceof Damageable meta) {
+            int maxDamage = meta.hasMaxDamage() ? meta.getMaxDamage() : current.getType().getMaxDurability();
+            int damage = meta.getDamage() + input.damage();
+            if (maxDamage > 0 && damage < maxDamage) {
+                meta.setDamage(damage);
+                current.setItemMeta(meta);
+                return current;
+            }
+        }
+        String replacementId = input.replacementFor(consumedId);
+        return replacementId == null || replacementId.isBlank() ? null
+                : MachineItems.createOutputItem(craftEngineHook, replacementId, 1);
     }
 
     private boolean canStore(SimpleMachine machine, ItemStack output) {

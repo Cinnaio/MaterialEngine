@@ -21,7 +21,7 @@ public record TeaTableRecipe(
     public record Variant(String id, String consumeReplacement) {
     }
 
-    public record Input(List<Variant> variants, int amount) {
+    public record Input(List<Variant> variants, int amount, int damage) {
         public boolean accepts(String itemId) {
             if (itemId == null) {
                 return false;
@@ -64,7 +64,11 @@ public record TeaTableRecipe(
     public boolean hasEnough(Map<String, ItemStack> slotItems) {
         for (Map.Entry<String, Input> entry : inputs.entrySet()) {
             ItemStack item = slotItems.get(entry.getKey());
-            if (!MachineItems.hasItem(item) || item.getAmount() < entry.getValue().amount()) {
+            Input input = entry.getValue();
+            if (!MachineItems.hasItem(item)) {
+                return false;
+            }
+            if (input.damage() <= 0 && item.getAmount() < input.amount()) {
                 return false;
             }
         }
@@ -126,6 +130,6 @@ public record TeaTableRecipe(
         if (variants.isEmpty()) {
             return null;
         }
-        return new Input(List.copyOf(variants), Math.max(1, slot.getInt("amount", 1)));
+        return new Input(List.copyOf(variants), Math.max(1, slot.getInt("amount", 1)), Math.max(0, slot.getInt("damage", 0)));
     }
 }
