@@ -16,9 +16,9 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-55>{fire}<shift:-54><reset>{name}"
-      title-update-ticks: 5
-      progress-image-width: 5
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-52>{fire}<shift:-54><reset>{name}"
+      title-update-ticks: 2
+      progress-image-width: 24
       progress-char-start: 59776
       fire-char-start: 59808
       fire-frames: 4
@@ -76,7 +76,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     recipes:
@@ -133,7 +133,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     recipes:
@@ -182,9 +182,9 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-55>{fire}<shift:-54><reset>{name}"
-      title-update-ticks: 5
-      progress-image-width: 5
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-52>{fire}<shift:-54><reset>{name}"
+      title-update-ticks: 2
+      progress-image-width: 24
       progress-char-start: 59776
       fire-char-start: 59808
       fire-frames: 4
@@ -223,5 +223,5 @@ machines:
       id: cgap:tea_table
     gui:
       image-token: <image:cgap:tea_table_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-141>{progress}<shift:-138><reset>{name}"
       progress: 108
