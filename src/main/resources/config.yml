@@ -17,7 +17,7 @@ machines:
       output-slot: 15
     gui:
       image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:10><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 24
       progress-char-start: 59776
@@ -122,7 +122,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:tea_drying_pan_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-65><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     effects:
@@ -342,7 +342,7 @@ machines:
       output-slot: 14
     gui:
       image-token: <image:cgap:fermentation_barrel_gui>
-      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-138><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-69><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 108
     effects:
@@ -473,7 +473,7 @@ machines:
       output-slot: 15
     gui:
       image-token: <image:cgap:tea_table_gui>
-      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-106><reset>{name}"
+      title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-21><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 24
       progress-char-start: 59840  # 茶桌专属 25 帧箭头（tea_table_progress，ascent -6 比茶炉高 18px）；59776 茶炉/59808 火焰
