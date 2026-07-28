@@ -476,7 +476,7 @@ machines:
       title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-106><reset>{name}"
       title-update-ticks: 5
       progress-image-width: 24
-      progress-char-start: 59776  # 复用茶炉 25 帧箭头；59808 起是火焰字符区，不能用作进度
+      progress-char-start: 59840  # 茶桌专属 25 帧箭头（tea_table_progress，ascent -6 比茶炉高 18px）；59776 茶炉/59808 火焰
     effects:
       sounds:
         open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.1 }
