@@ -209,9 +209,10 @@ public final class SickleHarvestFeature implements Listener {
         if (!(block.getBlockData() instanceof Ageable ageable) || ageable.getAge() < spec.matureAge()) {
             return false;
         }
+        Material cropType = block.getType(); // breakNaturally 后方块变空气，须先记下作物类型
         block.breakNaturally(player.getInventory().getItemInMainHand());
         if (consumeSeed(player, spec.seedId())) {
-            Ageable replant = (Ageable) Bukkit.createBlockData(block.getType());
+            Ageable replant = (Ageable) Bukkit.createBlockData(cropType);
             replant.setAge(0);
             block.setBlockData(replant, false);
         }
