@@ -1,6 +1,7 @@
 package com.github.cinnaio.materiaengine;
 
 import com.github.cinnaio.materiaengine.command.ReloadCommand;
+import com.github.cinnaio.materiaengine.feature.SickleHarvestFeature;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -14,6 +15,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
     private TeaTableGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines = new ArrayList<>();
     private MateriaEngineLang lang;
+    private SickleHarvestFeature sickleHarvest;
 
     @Override
     public void onEnable() {
@@ -30,7 +32,9 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.barrel", "tea_barrels", "tea barrel", "barrel"));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove"));
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, lang));
+        this.sickleHarvest = new SickleHarvestFeature(this, craftEngineHook);
+        getServer().getPluginManager().registerEvents(sickleHarvest, this);
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, sickleHarvest, lang));
 
         getLogger().info("MateriaEngine enabled.");
     }

@@ -1277,3 +1277,19 @@ machines:
           cup: { id: cgap:cup_zisha }
         process-ticks: 40
         output: { id: cgap:lemon_tea_zisha }
+
+# ===== 镰刀：范围收割 + 自动续种 =====
+# 左键破坏成熟作物触发；半径 1 = 3x3。背包有对应种子则原位续种成 age0。
+# 消耗耐久 = 收割数量（受耐久附魔减免）；掉落吃时运附魔。镰刀为 iron_hoe，右键锄地已被插件拦截。
+# mature-age 对齐各作物成熟判定：茶 6 / 水稻 7 / 小麦胡萝卜土豆 7 / 甜菜根地狱疣 3。
+sickle:
+  item: cgap:sickle
+  radius: 1
+  crops:
+    cgap:tea_tree_crop: { seed: cgap:tea_seeds, mature-age: 6 }
+    cgap:xian_rice_plant_crop: { seed: cgap:item_xian_rice_seedling, mature-age: 7 }
+    minecraft:wheat: { seed: minecraft:wheat_seeds, mature-age: 7 }
+    minecraft:carrots: { seed: minecraft:carrot, mature-age: 7 }
+    minecraft:potatoes: { seed: minecraft:potato, mature-age: 7 }
+    minecraft:beetroots: { seed: minecraft:beetroot_seeds, mature-age: 3 }
+    minecraft:nether_wart: { seed: minecraft:nether_wart, mature-age: 3 }

@@ -1,5 +1,6 @@
 package com.github.cinnaio.materiaengine.command;
 
+import com.github.cinnaio.materiaengine.feature.SickleHarvestFeature;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -12,11 +13,14 @@ import java.util.List;
 public final class ReloadCommand implements BasicCommand {
     private final TeaTableGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines;
+    private final SickleHarvestFeature sickleHarvest;
     private final MateriaEngineLang lang;
 
-    public ReloadCommand(TeaTableGui teaTableGui, List<SimpleProcessingMachineGui> processingMachines, MateriaEngineLang lang) {
+    public ReloadCommand(TeaTableGui teaTableGui, List<SimpleProcessingMachineGui> processingMachines,
+                         SickleHarvestFeature sickleHarvest, MateriaEngineLang lang) {
         this.teaTableGui = teaTableGui;
         this.processingMachines = processingMachines;
+        this.sickleHarvest = sickleHarvest;
         this.lang = lang;
     }
 
@@ -28,6 +32,7 @@ public final class ReloadCommand implements BasicCommand {
             lang.reload();
             teaTableGui.reload();
             processingMachines.forEach(SimpleProcessingMachineGui::reload);
+            sickleHarvest.reload();
             source.getSender().sendMessage(lang.text(source.getSender(), "command.reload-success"));
             return;
         }
