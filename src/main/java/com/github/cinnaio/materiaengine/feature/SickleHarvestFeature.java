@@ -3,7 +3,6 @@ package com.github.cinnaio.materiaengine.feature;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import com.github.cinnaio.materiaengine.util.MachineItems;
 import net.momirealms.craftengine.bukkit.api.CraftEngineBlocks;
-import net.momirealms.craftengine.bukkit.api.event.CustomBlockBreakEvent;
 import net.momirealms.craftengine.core.block.CustomBlock;
 import net.momirealms.craftengine.core.block.ImmutableBlockState;
 import net.momirealms.craftengine.core.block.properties.Property;
@@ -19,7 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 镰刀范围收割：左键破坏成熟作物 → 收割半径内全部成熟作物（teastory 自定义 + 原版），
+ * 镰刀范围收割：右键成熟作物 → 收割半径内全部成熟作物（teastory 自定义 + 原版），
  * 背包有对应种子则原位续种成 age 0，消耗耐久按收割数量成倍增加（受耐久附魔减免）。
  * 同时拦截镰刀（iron_hoe）右键耕地的效果。
  */
@@ -103,73 +101,56 @@ public final class SickleHarvestFeature implements Listener {
         this.vanillaCrops = Map.copyOf(vanillas);
     }
 
-    /** teastory 自定义作物：CraftEngine 专属破坏事件，取消后 CraftEngine 直接 return，不掉落。 */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onCustomBreak(CustomBlockBreakEvent event) {
-        Player player = event.getPlayer();
-        if (player.getGameMode() == GameMode.CREATIVE) {
-            return;
-        }
-        if (!craftEngineHook.isCustomItem(player.getInventory().getItemInMainHand(), sickleId)) {
-            return;
-        }
-        String cropId = craftEngineHook.getBlockId(event.bukkitBlock());
-        CropSpec spec = customCrops.get(cropId);
-        if (spec == null) {
-            return;
-        }
-        if (ageOf(event.customBlock(), event.blockState()) < spec.matureAge()) {
-            return;
-        }
-        event.setCancelled(true);
-        harvestArea(player, event.bukkitBlock());
-    }
-
-    /** 原版作物：Bukkit 破坏事件（自定义方块已由 CustomBlockBreakEvent 处理，此处跳过）。 */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onBreak(BlockBreakEvent event) {
-        if (event.isCancelled() || craftEngineHook.getBlockId(event.getBlock()) != null) {
-            return;
-        }
-        Player player = event.getPlayer();
-        if (player.getGameMode() == GameMode.CREATIVE) {
-            return;
-        }
-        if (!craftEngineHook.isCustomItem(player.getInventory().getItemInMainHand(), sickleId)) {
-            return;
-        }
-        CropSpec spec = vanillaCrops.get(event.getBlock().getType());
-        if (spec == null) {
-            return;
-        }
-        if (!(event.getBlock().getBlockData() instanceof Ageable ageable) || ageable.getAge() < spec.matureAge()) {
-            return;
-        }
-        event.setCancelled(true);
-        harvestArea(player, event.getBlock());
-    }
-
-    /** 取消镰刀（iron_hoe）右键耕地的效果。 */
+    /**
+     * 右键成熟作物 → 范围收割 + 续种；右键可耕地 → 拦截 iron_hoe 锄地。
+     * 收割/续种走 CraftEngineBlocks.remove/place 与 breakNaturally/setBlockData 直接 API，
+     * 不触发破坏/放置事件，因此不影响 NatureEngine 的生长追踪。
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
             return;
         }
-        ItemStack hand = event.getItem();
+        ItemStack hand = event.getPlayer().getInventory().getItemInMainHand();
         if (hand == null || !craftEngineHook.isCustomItem(hand, sickleId)) {
             return;
         }
-        if (TILLABLE.contains(event.getClickedBlock().getType())) {
+        Block block = event.getClickedBlock();
+        if (isMatureCrop(block)) {
+            event.setCancelled(true);
+            harvestArea(event.getPlayer(), hand, block);
+            return;
+        }
+        if (TILLABLE.contains(block.getType())) {
             event.setCancelled(true);
         }
     }
 
-    private void harvestArea(Player player, Block center) {
-        ItemStack hand = player.getInventory().getItemInMainHand();
+    private boolean isMatureCrop(Block block) {
+        // teastory 自定义作物
+        String cropId = craftEngineHook.getBlockId(block);
+        if (cropId != null) {
+            CropSpec spec = customCrops.get(cropId);
+            if (spec == null) {
+                return false;
+            }
+            ImmutableBlockState state = CraftEngineBlocks.getCustomBlockState(block);
+            if (state == null || state.isEmpty()) {
+                return false;
+            }
+            CustomBlock custom = CraftEngineBlocks.byId(Key.ce(cropId));
+            return custom != null && ageOf(custom, state) >= spec.matureAge();
+        }
+        // 原版作物
+        CropSpec spec = vanillaCrops.get(block.getType());
+        return spec != null && block.getBlockData() instanceof Ageable ageable && ageable.getAge() >= spec.matureAge();
+    }
+
+    private void harvestArea(Player player, ItemStack hand, Block center) {
         int harvested = 0;
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
-                if (harvestBlock(player, center.getRelative(dx, 0, dz))) {
+                if (harvestBlock(player, hand, center.getRelative(dx, 0, dz))) {
                     harvested++;
                 }
             }
@@ -179,7 +160,7 @@ public final class SickleHarvestFeature implements Listener {
         }
     }
 
-    private boolean harvestBlock(Player player, Block block) {
+    private boolean harvestBlock(Player player, ItemStack hand, Block block) {
         // 自定义作物：remove（成熟战利品，时运生效）→ 有种子则原位续种 age0
         String cropId = craftEngineHook.getBlockId(block);
         if (cropId != null) {
@@ -210,7 +191,7 @@ public final class SickleHarvestFeature implements Listener {
             return false;
         }
         Material cropType = block.getType(); // breakNaturally 后方块变空气，须先记下作物类型
-        block.breakNaturally(player.getInventory().getItemInMainHand());
+        block.breakNaturally(hand);
         if (consumeSeed(player, spec.seedId())) {
             Ageable replant = (Ageable) Bukkit.createBlockData(cropType);
             replant.setAge(0);
