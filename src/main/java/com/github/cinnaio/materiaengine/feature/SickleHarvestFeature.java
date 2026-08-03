@@ -19,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -156,7 +157,9 @@ public final class SickleHarvestFeature implements Listener {
             }
         }
         if (harvested > 0 && player.getGameMode() != GameMode.CREATIVE) {
-            player.getInventory().setItemInMainHand(player.damageItemStack(hand, harvested));
+            // 损坏主手实际装备的镰刀：尊重耐久附魔、触发 PlayerItemDamage/Break 事件、
+            // 耗尽自动碎裂。对自定义物品用装备槽重载（脱离副本的 damageItemStack(ItemStack) 不可靠）。
+            player.damageItemStack(EquipmentSlot.HAND, harvested);
         }
     }
 
