@@ -7,6 +7,7 @@ import com.github.cinnaio.materiaengine.data.MachineDataStore;
 import com.github.cinnaio.materiaengine.data.SimpleMachine;
 import com.github.cinnaio.materiaengine.data.StoredMachine;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
+import com.github.cinnaio.materiaengine.integration.StorageExtractionTracker;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import com.github.cinnaio.materiaengine.util.MachineItems;
 
@@ -38,6 +39,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public final class SimpleProcessingMachineGui implements Listener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -49,6 +51,7 @@ public final class SimpleProcessingMachineGui implements Listener {
     private final CraftEngineHook craftEngineHook;
     private final MachineDataStore<SimpleMachine> dataStore;
     private final MateriaEngineLang lang;
+    private final StorageExtractionTracker storageExtractionTracker;
     private final String configPath;
     private final String langPrefix;
     private final Map<String, SimpleMachine> machines;
@@ -76,14 +79,17 @@ public final class SimpleProcessingMachineGui implements Listener {
     private double particleSpreadY;
     private Map<String, SimpleMachineRecipe> recipes = Map.of();
     private Map<String, Integer> fuelItems = Map.of();
+    private Set<Integer> storageBlockedSlots = Set.of();
     private MachineSounds sounds = MachineSounds.none();
     private BukkitTask tickTask;
 
     public SimpleProcessingMachineGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
-                               String configPath, String table, String description, String langPrefix) {
+                               String configPath, String table, String description, String langPrefix,
+                               StorageExtractionTracker storageExtractionTracker) {
         this.plugin = plugin;
         this.craftEngineHook = craftEngineHook;
         this.lang = lang;
+        this.storageExtractionTracker = storageExtractionTracker;
         this.configPath = configPath;
         this.langPrefix = langPrefix;
         this.dataStore = new MachineDataStore<>(plugin, table, description, row -> new SimpleMachine(
@@ -106,6 +112,9 @@ public final class SimpleProcessingMachineGui implements Listener {
         this.defaultProcessTicks = integer(config, "processing.process-ticks", config.getInt("process-ticks", 100));
         this.inputSlot = integer(config, "inventory.input-slot", config.getInt("input-slot", 11));
         this.fuelSlot = config.isInt("inventory.fuel-slot") ? config.getInt("inventory.fuel-slot") : -1;
+        this.storageBlockedSlots = this.fuelSlot >= 0
+                ? Set.of(this.inputSlot, this.fuelSlot)
+                : Set.of(this.inputSlot);
         this.outputSlot = integer(config, "inventory.output-slot", config.getInt("output-slot", 15));
         MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_drying_pan_gui>", 5, 108);
         this.progressImageWidth = gui.progressImageWidth();
@@ -196,6 +205,7 @@ public final class SimpleProcessingMachineGui implements Listener {
         }
         if (holder.storage) {
             handleStorageClick(event);
+            this.storageExtractionTracker.observeClick(event, this.storageBlockedSlots);
             return;
         }
         int topSize = event.getInventory().getSize();
@@ -253,6 +263,7 @@ public final class SimpleProcessingMachineGui implements Listener {
             if (event.getRawSlots().contains(inputSlot)) {
                 event.setCancelled(true);
             }
+            this.storageExtractionTracker.observeDrag(event, this.storageBlockedSlots);
             return;
         }
         for (int slot : event.getRawSlots()) {

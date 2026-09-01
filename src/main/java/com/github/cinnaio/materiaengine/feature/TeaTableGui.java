@@ -6,6 +6,7 @@ import com.github.cinnaio.materiaengine.data.MachineDataStore;
 import com.github.cinnaio.materiaengine.data.SimpleMachine;
 import com.github.cinnaio.materiaengine.data.StoredMachine;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
+import com.github.cinnaio.materiaengine.integration.StorageExtractionTracker;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import com.github.cinnaio.materiaengine.util.MachineItems;
 
@@ -37,6 +38,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public final class TeaTableGui implements Listener {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
@@ -48,6 +50,7 @@ public final class TeaTableGui implements Listener {
     private final CraftEngineHook craftEngineHook;
     private final MachineDataStore<SimpleMachine> dataStore;
     private final MateriaEngineLang lang;
+    private final StorageExtractionTracker storageExtractionTracker;
     private final String configPath;
     private final String langPrefix;
     private final Map<String, SimpleMachine> machines;
@@ -65,14 +68,17 @@ public final class TeaTableGui implements Listener {
     private String imageToken;
     private String titleTemplate;
     private Map<String, TeaTableRecipe> recipes = Map.of();
+    private Set<Integer> storageBlockedSlots = Set.of();
     private MachineSounds sounds = MachineSounds.none();
     private BukkitTask tickTask;
 
     public TeaTableGui(JavaPlugin plugin, CraftEngineHook craftEngineHook, MateriaEngineLang lang,
-                       String configPath, String table, String description, String langPrefix) {
+                       String configPath, String table, String description, String langPrefix,
+                       StorageExtractionTracker storageExtractionTracker) {
         this.plugin = plugin;
         this.craftEngineHook = craftEngineHook;
         this.lang = lang;
+        this.storageExtractionTracker = storageExtractionTracker;
         this.configPath = configPath;
         this.langPrefix = langPrefix;
         this.dataStore = new MachineDataStore<>(plugin, table, description, row -> new SimpleMachine(
@@ -93,6 +99,7 @@ public final class TeaTableGui implements Listener {
         this.blockId = config.getString("block.id", "");
         this.defaultProcessTicks = integer(config, "processing.process-ticks", 100);
         this.inputSlots = loadInputSlots(config);
+        this.storageBlockedSlots = Set.copyOf(this.inputSlots.values());
         this.outputSlot = integer(config, "inventory.output-slot", 15);
         MachineGuiLayout gui = MachineGuiLayout.load(config, "<image:cgap:tea_table_gui>", 5, 24);
         this.progressImageWidth = gui.progressImageWidth();
@@ -174,6 +181,7 @@ public final class TeaTableGui implements Listener {
         }
         if (holder.storage) {
             handleStorageClick(event);
+            this.storageExtractionTracker.observeClick(event, this.storageBlockedSlots);
             return;
         }
         int topSize = event.getInventory().getSize();
@@ -223,6 +231,7 @@ public final class TeaTableGui implements Listener {
                     return;
                 }
             }
+            this.storageExtractionTracker.observeDrag(event, this.storageBlockedSlots);
             return;
         }
         for (int slot : event.getRawSlots()) {

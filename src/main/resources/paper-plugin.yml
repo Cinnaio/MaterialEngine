@@ -14,6 +14,10 @@ dependencies:
       required: false
       load: BEFORE
       join-classpath: true
+    BeaconEngine:
+      required: false
+      load: BEFORE
+      join-classpath: false
     Residence:
       required: false
       load: BEFORE
