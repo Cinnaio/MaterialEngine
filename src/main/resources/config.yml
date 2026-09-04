@@ -502,6 +502,11 @@ machines:
         any:
           - { id: cgap:green_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
           - { id: cgap:green_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
+      jasmine-tea: &pour_jasmine
+        damage: 1
+        any:
+          - { id: cgap:jasmine_tea_porcelain_kettle, consume-replacement: cgap:empty_porcelain_kettle }
+          - { id: cgap:jasmine_tea_zisha_kettle, consume-replacement: cgap:empty_zisha_kettle }
       oolong-tea: &pour_oolong
         damage: 1
         any:
@@ -756,6 +761,12 @@ machines:
           water: *boiled_water
           cup: { id: cgap:cup_glass }
         output: { id: cgap:green_tea_glass }
+      jasmine-tea-glass:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_leaf, amount: 2 }
+          water: *boiled_water
+          cup: { id: cgap:cup_glass }
+        output: { id: cgap:jasmine_tea_glass }
       oolong-tea-glass:
         inputs:
           leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
@@ -793,6 +804,12 @@ machines:
           water: *boiled_water
           cup: { id: cgap:cup_stone }
         output: { id: cgap:green_tea_stone }
+      jasmine-tea-stone:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_leaf, amount: 2 }
+          water: *boiled_water
+          cup: { id: cgap:cup_stone }
+        output: { id: cgap:jasmine_tea_stone }
       oolong-tea-stone:
         inputs:
           leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
@@ -830,6 +847,12 @@ machines:
           water: *boiled_water
           cup: { id: cgap:cup_wood }
         output: { id: cgap:green_tea_wood }
+      jasmine-tea-wood:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_leaf, amount: 2 }
+          water: *boiled_water
+          cup: { id: cgap:cup_wood }
+        output: { id: cgap:jasmine_tea_wood }
       oolong-tea-wood:
         inputs:
           leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
@@ -867,6 +890,12 @@ machines:
           water: *boiled_water
           cup: { id: cgap:cup_porcelain }
         output: { id: cgap:green_tea_porcelain }
+      jasmine-tea-porcelain:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_leaf, amount: 2 }
+          water: *boiled_water
+          cup: { id: cgap:cup_porcelain }
+        output: { id: cgap:jasmine_tea_porcelain }
       oolong-tea-porcelain:
         inputs:
           leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
@@ -904,6 +933,12 @@ machines:
           water: *boiled_water
           cup: { id: cgap:cup_zisha }
         output: { id: cgap:green_tea_zisha }
+      jasmine-tea-zisha:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_leaf, amount: 2 }
+          water: *boiled_water
+          cup: { id: cgap:cup_zisha }
+        output: { id: cgap:jasmine_tea_zisha }
       oolong-tea-zisha:
         inputs:
           leaf: { id: cgap:oolong_tea_leaf, amount: 2 }
@@ -944,6 +979,13 @@ machines:
           cup: { id: cgap:empty_porcelain_kettle }
         process-ticks: 160
         output: { id: cgap:green_tea_porcelain_kettle }
+      jasmine-tea-porcelain-kettle:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_bag, consume-replacement: cgap:jasmine_tea_residue }
+          water: *boiled_water
+          cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
+        output: { id: cgap:jasmine_tea_porcelain_kettle }
       oolong-tea-porcelain-kettle:
         inputs:
           leaf: { id: cgap:oolong_tea_bag, consume-replacement: cgap:oolong_tea_residue }
@@ -987,6 +1029,13 @@ machines:
           cup: { id: cgap:empty_zisha_kettle }
         process-ticks: 160
         output: { id: cgap:green_tea_zisha_kettle }
+      jasmine-tea-zisha-kettle:
+        inputs:
+          leaf: { id: cgap:jasmine_tea_bag, amount: 2, consume-replacement: cgap:jasmine_tea_residue }
+          water: *boiled_water
+          cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
+        output: { id: cgap:jasmine_tea_zisha_kettle }
       oolong-tea-zisha-kettle:
         inputs:
           leaf: { id: cgap:oolong_tea_bag, amount: 2, consume-replacement: cgap:oolong_tea_residue }
@@ -1078,6 +1127,37 @@ machines:
           cup: { id: cgap:cup_zisha }
         process-ticks: 40
         output: { id: cgap:green_tea_zisha }
+      # --- 茉莉花茶 ---
+      pour-jasmine-tea-glass:
+        inputs:
+          water: *pour_jasmine
+          cup: { id: cgap:cup_glass }
+        process-ticks: 40
+        output: { id: cgap:jasmine_tea_glass }
+      pour-jasmine-tea-stone:
+        inputs:
+          water: *pour_jasmine
+          cup: { id: cgap:cup_stone }
+        process-ticks: 40
+        output: { id: cgap:jasmine_tea_stone }
+      pour-jasmine-tea-wood:
+        inputs:
+          water: *pour_jasmine
+          cup: { id: cgap:cup_wood }
+        process-ticks: 40
+        output: { id: cgap:jasmine_tea_wood }
+      pour-jasmine-tea-porcelain:
+        inputs:
+          water: *pour_jasmine
+          cup: { id: cgap:cup_porcelain }
+        process-ticks: 40
+        output: { id: cgap:jasmine_tea_porcelain }
+      pour-jasmine-tea-zisha:
+        inputs:
+          water: *pour_jasmine
+          cup: { id: cgap:cup_zisha }
+        process-ticks: 40
+        output: { id: cgap:jasmine_tea_zisha }
       # --- 乌龙茶 ---
       pour-oolong-tea-glass:
         inputs:
@@ -1299,12 +1379,13 @@ machines:
 # ===== 镰刀：范围收割 + 自动续种 =====
 # 右键成熟作物触发；半径 1 = 3x3。背包有对应种子则原位续种成 age0。
 # 消耗耐久 = 收割数量（受耐久附魔减免）；掉落吃时运附魔。镰刀为 iron_hoe，右键锄地已被插件拦截。
-# mature-age 对齐各作物成熟判定：茶 6 / 水稻 7 / 小麦胡萝卜土豆 7 / 甜菜根地狱疣 3。
+# mature-age 对齐各作物成熟判定：茶 6 / 茉莉 3 / 水稻 7 / 小麦胡萝卜土豆 7 / 甜菜根地狱疣 3。
 sickle:
   item: cgap:sickle
   radius: 1
   crops:
     cgap:tea_tree_crop: { seed: cgap:tea_seeds, mature-age: 6 }
+    cgap:jasmine_flower_crop: { seed: cgap:jasmine_seeds, mature-age: 3 }
     cgap:xian_rice_plant_crop: { seed: cgap:item_xian_rice_seedling, mature-age: 7 }
     minecraft:wheat: { seed: minecraft:wheat_seeds, mature-age: 7 }
     minecraft:carrots: { seed: minecraft:carrot, mature-age: 7 }

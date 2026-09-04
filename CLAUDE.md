@@ -7,7 +7,7 @@ MateriaEngine 是 Paper/Folia 26.1.x 插件（已用 26.1.2 验证），用于�
 - 插件负责：机器交互、GUI、进度、配方逻辑、数据保存、Folia 安全调度。
 - CraftEngine 负责：物品、方块、模型、贴图、GUI 字体图标。
 - 主分支使用 Java 25，CraftEngine API 版本锁定为 `26.8`；旧版 1.21.4 构建保留在 `legacy/1.21.4` 分支。
-- 当前配套 CGAP-RESOURCE 资源版本：`0.17.0`（依赖其中的 `cgap:lemon` 与紫砂壶 `max-damage: 8`）。
+- 当前配套 CGAP-RESOURCE 资源版本：`0.18.14`（依赖其中的 `cgap:lemon`、`cgap:jasmine_tea_bag` 与紫砂壶 `max-damage: 8`）。
 
 ## 开发规则
 
@@ -112,7 +112,7 @@ machines:
 - `cgap:teapan`：茶盘，露天无燃料，看天萎凋/淋湿/挽救/闷黄（17 条）。
 - `cgap:barrel`：发酵桶，`fuel-items` 独占燃料（发酵粉 800 tick），碎茶三级发酵（3 条）；GUI 与茶盘同款（`fermentation_barrel_gui`，槽位 12 输入/13 发酵粉/14 输出，108px 长条进度，无火焰）。
 - `cgap:tea_stove`：茶炉，原版燃料，烘焙三种发酵叶 + 烘青白茶 + 蒸青抹茶（5 条）。
-- `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），内置 108 条配方：15 特化杯装（奶/柠/抹）+ 6 特化壶装 + 30 纯茶杯装 + 12 纯茶壶装 + 45 倒茶（满壶按耐久倒杯，瓷壶 4 杯/紫砂壶 8 杯）。
+- `cgap:tea_table`：茶桌，六槽多输入冲泡机器（tool/sugar/cup/water/leaf → drink），内置 122 条配方：15 特化杯装（奶/柠/抹）+ 8 特化壶装（含鲜柠檬兼容路径）+ 35 纯茶杯装 + 14 纯茶壶装 + 50 倒茶（满壶按耐久倒杯，瓷壶 4 杯/紫砂壶 8 杯）。
 
 ## 关键类
 
@@ -148,7 +148,7 @@ E:\Developments\Projects\CGAP-RESOURCE
 容器: cup_{glass,stone,wood,porcelain,zisha} / empty_{porcelain,zisha}_kettle
       pot_* 与 boiled_water_pot_*（stone/porcelain/iron/zisha）
 成品: {black,green,oolong,puer,white,yellow}_tea_<杯材质> / matcha_drink_* / milk_tea_* / lemon_tea_*
-      九味 × 瓷壶/紫砂壶 的 *_kettle 满壶 + 六味 *_tea_bag 与 *_tea_residue
+      十味 × 瓷壶/紫砂壶 的 *_kettle 满壶 + 七味 *_tea_bag 与 *_tea_residue
 GUI: cgap:tea_drying_pan_gui / tea_stove_gui / tea_table_gui
      cgap:tea_progress_0..108 / tea_stove_progress_0..5
 ```
