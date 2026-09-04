@@ -2,11 +2,11 @@
 
 ## 项目简介
 
-MateriaEngine 是 Paper/Folia 1.21.4 插件，用于承载 TeaStory 风格机器逻辑，并与 CraftEngine 内容包配合使用。
+MateriaEngine 是 Paper/Folia 26.1.x 插件（已用 26.1.2 验证），用于承载 TeaStory 风格机器逻辑，并与 CraftEngine 内容包配合使用。
 
 - 插件负责：机器交互、GUI、进度、配方逻辑、数据保存、Folia 安全调度。
 - CraftEngine 负责：物品、方块、模型、贴图、GUI 字体图标。
-- 当前 CraftEngine API 版本按服务器现状锁定为 `0.0.67`。
+- 主分支使用 Java 25，CraftEngine API 版本锁定为 `26.8`；旧版 1.21.4 构建保留在 `legacy/1.21.4` 分支。
 - 当前配套 CGAP-RESOURCE 资源版本：`0.17.0`（依赖其中的 `cgap:lemon` 与紫砂壶 `max-damage: 8`）。
 
 ## 开发规则

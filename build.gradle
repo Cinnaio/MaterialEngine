@@ -1,10 +1,10 @@
 plugins {
     id 'java'
-    id 'xyz.jpenilla.run-paper' version '2.3.1'
+    id 'xyz.jpenilla.run-paper' version '3.0.2'
 }
 
 group = 'com.github.cinnaio'
-version = '1.15.0-SNAPSHOT'
+version = '2.0.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -23,13 +23,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
-    compileOnly 'net.momirealms:craft-engine-core:0.0.67'
-    compileOnly 'net.momirealms:craft-engine-bukkit:0.0.67'
+    compileOnly 'io.papermc.paper:paper-api:26.1.2.build.74-stable'
+    compileOnly 'net.momirealms:craft-engine-core:26.8'
+    compileOnly 'net.momirealms:craft-engine-bukkit:26.8'
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 
 tasks {
@@ -45,6 +45,6 @@ tasks {
     }
 
     runServer {
-        minecraftVersion('1.21.4')
+        minecraftVersion('26.1.2')
     }
 }

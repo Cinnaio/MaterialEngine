@@ -3,9 +3,9 @@ package com.github.cinnaio.materiaengine.feature;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import com.github.cinnaio.materiaengine.util.MachineItems;
 import net.momirealms.craftengine.bukkit.api.CraftEngineBlocks;
-import net.momirealms.craftengine.core.block.CustomBlock;
+import net.momirealms.craftengine.core.block.BlockDefinition;
 import net.momirealms.craftengine.core.block.ImmutableBlockState;
-import net.momirealms.craftengine.core.block.properties.Property;
+import net.momirealms.craftengine.core.block.property.Property;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -139,7 +139,7 @@ public final class SickleHarvestFeature implements Listener {
             if (state == null || state.isEmpty()) {
                 return false;
             }
-            CustomBlock custom = CraftEngineBlocks.byId(Key.ce(cropId));
+            BlockDefinition custom = CraftEngineBlocks.byId(Key.ce(cropId));
             return custom != null && ageOf(custom, state) >= spec.matureAge();
         }
         // 原版作物
@@ -175,7 +175,7 @@ public final class SickleHarvestFeature implements Listener {
             if (state == null || state.isEmpty()) {
                 return false;
             }
-            CustomBlock custom = CraftEngineBlocks.byId(Key.ce(cropId));
+            BlockDefinition custom = CraftEngineBlocks.byId(Key.ce(cropId));
             if (custom == null || ageOf(custom, state) < spec.matureAge()) {
                 return false;
             }
@@ -219,7 +219,7 @@ public final class SickleHarvestFeature implements Listener {
     }
 
     @SuppressWarnings("unchecked")
-    private static int ageOf(CustomBlock custom, ImmutableBlockState state) {
+    private static int ageOf(BlockDefinition custom, ImmutableBlockState state) {
         Property<Integer> property = (Property<Integer>) custom.getProperty("age");
         if (property == null) {
             return 0;

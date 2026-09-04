@@ -1,7 +1,7 @@
 name: MateriaEngine
 version: '${version}'
 main: com.github.cinnaio.materiaengine.MateriaEnginePlugin
-api-version: '1.21'
+api-version: '26.1'
 folia-supported: true
 authors:
   - Cinnaio

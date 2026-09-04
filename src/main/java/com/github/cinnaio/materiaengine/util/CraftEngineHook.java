@@ -3,7 +3,7 @@ package com.github.cinnaio.materiaengine.util;
 import net.momirealms.craftengine.bukkit.api.CraftEngineBlocks;
 import net.momirealms.craftengine.bukkit.api.CraftEngineItems;
 import net.momirealms.craftengine.core.block.ImmutableBlockState;
-import net.momirealms.craftengine.core.block.properties.Property;
+import net.momirealms.craftengine.core.block.property.Property;
 import net.momirealms.craftengine.core.item.ItemBuildContext;
 import net.momirealms.craftengine.core.util.Key;
 import org.bukkit.Bukkit;
@@ -68,7 +68,7 @@ public final class CraftEngineHook {
         }
         try {
             var custom = CraftEngineItems.byId(Key.ce(id));
-            return custom == null || custom.isEmpty() ? null : custom.buildItemStack(ItemBuildContext.empty(), 1);
+            return custom == null ? null : custom.buildBukkitItem(ItemBuildContext.empty(), 1);
         } catch (Throwable error) {
             logApiMismatch(error);
             return null;
