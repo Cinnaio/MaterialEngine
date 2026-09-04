@@ -687,6 +687,24 @@ machines:
         process-ticks: 160
         output: { id: cgap:milk_tea_zisha_kettle }
       # ===== 壶装柠檬茶 =====
+      # 预配柠檬茶包路径：柠檬茶包已包含红茶与干柠檬，不再额外占用 tool 槽。
+      lemon-tea-bag-porcelain-kettle:
+        inputs:
+          leaf: { id: cgap:lemon_tea_bag, consume-replacement: cgap:black_tea_residue }
+          sugar: { id: minecraft:sugar, amount: 12 }
+          water: *boiled_water
+          cup: { id: cgap:empty_porcelain_kettle }
+        process-ticks: 160
+        output: { id: cgap:lemon_tea_porcelain_kettle }
+      lemon-tea-bag-zisha-kettle:
+        inputs:
+          leaf: { id: cgap:lemon_tea_bag, amount: 2, consume-replacement: cgap:black_tea_residue }
+          sugar: { id: minecraft:sugar, amount: 24 }
+          water: *boiled_water
+          cup: { id: cgap:empty_zisha_kettle }
+        process-ticks: 160
+        output: { id: cgap:lemon_tea_zisha_kettle }
+      # 兼容旧路径：红茶茶包 + 鲜柠檬仍可直接冲泡。
       lemon-tea-porcelain-kettle:
         inputs:
           leaf: { id: cgap:black_tea_bag, consume-replacement: cgap:black_tea_residue }
