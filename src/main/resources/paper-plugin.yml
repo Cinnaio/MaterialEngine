@@ -8,6 +8,13 @@ authors:
 description: Machine logic engine for CraftEngine-backed content.
 libraries:
   - org.xerial:sqlite-jdbc:3.46.1.0
+permissions:
+  materiaengine.admin:
+    default: op
+  materiaengine.harvest:
+    default: true
+  materiaengine.harvest.others:
+    default: op
 dependencies:
   server:
     CraftEngine:

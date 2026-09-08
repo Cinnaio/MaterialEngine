@@ -97,6 +97,8 @@ public final class HarvestToolsFeature implements Listener {
         }
     }
 
+    public HarvestToolsConfig settings() { return config; }
+
     public void shutdown() {
         regrowth.shutdown();
         lastFeedback.clear();

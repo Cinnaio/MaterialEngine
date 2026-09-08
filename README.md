@@ -128,7 +128,7 @@ machines:
 /me reload                           重载参数与中英文消息
 ```
 
-命令需要 `materiaengine.admin` 权限。输出包含总计、采收次数最多的五个工具/作物组合，以及产量最多的五种产物；完整明细保存在 `plugins/MateriaEngine/harvest_stats.db` 的 `harvest_stats` 和 `harvest_outputs` 表。
+个人查询使用默认开放的 `materiaengine.harvest` 权限，他人/全服查询需要 `materiaengine.harvest.others` 或 `materiaengine.admin`；导出与重载需要 `materiaengine.admin`。文本查询包含总计、采收次数最多的五个工具/作物组合，以及产量最多的五种产物；完整明细保存在 `plugins/MateriaEngine/harvest_stats.db` 的 `harvest_stats` 和 `harvest_outputs` 表。
 
 数据库只在启动时加载，采收路径更新内存；Paper/Folia 异步定时器以事务批量保存变更行，写入失败后保留待写记录供下个周期重试，正常停服保存最后一批。强制终止进程可能丢失尚未保存的数据，最多约一个保存周期。数据库加载失败会明确记录错误并阻止覆盖已有文件，需要修复原因后重启。自动化测试覆盖 SQLite 重开、重复写入、并发更新、事务回滚与重试；声音、粒子和保护插件的真实客户端表现仍需服务端验收。
 
@@ -145,6 +145,12 @@ machines:
 ```
 
 CSV 异步保存到 `plugins/MateriaEngine/exports/`，采用带 BOM 的 UTF-8 编码并正确转义逗号、引号及公式前缀。`record_type=harvest` 是工具/作物的采收汇总，`record_type=output` 是具体产物明细，汇总行与明细行应分别筛选后求和；累计导出的 `date` 为空，日周导出带实际记录日期。一次只运行一个导出，导出不会清零或修改统计。
+
+### 玩家采收面板（2.4.0-SNAPSHOT）
+
+玩家使用 `/me`、`/me harvest` 或 `/me harvest menu` 打开采收手册。面板以实际物品图标、物品名称和中英文作物名称展示总览、产物与品质、工具、作物与果树四个分页视图；每页 36 条，可切换累计/今日/本周、翻页和刷新。所有内容都是只读展示，Shift、数字键、丢弃和拖拽等操作不会取走图标。
+
+`/me harvest menu <在线玩家名或UUID>` 和 `/me harvest menu all` 提供管理员查询入口，面板每次交互都重新检查查看权限。关闭面板及停用插件会清空虚拟图标，统计本身不受影响。未安装 CraftEngine 或某个内容 ID 无法解析时，用纸张及原 ID 显示回退条目。
 
 ## 关键类
 

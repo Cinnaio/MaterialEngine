@@ -5,6 +5,8 @@ import com.github.cinnaio.materiaengine.config.HarvestToolsConfig;
 import com.github.cinnaio.materiaengine.feature.HarvestToolsFeature;
 import com.github.cinnaio.materiaengine.feature.HarvestStats;
 import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
+import com.github.cinnaio.materiaengine.feature.HarvestMenu;
+import com.github.cinnaio.materiaengine.feature.HarvestMenuItems;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -22,6 +24,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
     private MateriaEngineLang lang;
     private HarvestToolsFeature harvestTools;
     private HarvestStats harvestStats;
+    private HarvestMenu harvestMenu;
     private StorageExtractionTracker storageExtractionTracker;
 
     @Override
@@ -45,8 +48,10 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove", storageExtractionTracker));
         this.harvestTools = new HarvestToolsFeature(this, craftEngineHook, beaconEngineBridge, lang, harvestStats);
         getServer().getPluginManager().registerEvents(harvestTools, this);
+        this.harvestMenu = new HarvestMenu(this, harvestStats, lang, new HarvestMenuItems(craftEngineHook), harvestTools::settings);
+        getServer().getPluginManager().registerEvents(harvestMenu, this);
         registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang,
-                harvestStats, new HarvestReportExporter(this, harvestStats, lang)));
+                harvestStats, new HarvestReportExporter(this, harvestStats, lang), harvestMenu));
 
         getLogger().info("MateriaEngine enabled.");
     }
@@ -66,6 +71,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
             storageExtractionTracker.shutdown();
         }
         if (harvestTools != null) harvestTools.shutdown();
+        if (harvestMenu != null) harvestMenu.shutdown();
         if (harvestStats != null) harvestStats.shutdown();
         getServer().getScheduler().cancelTasks(this);
         getLogger().info("MateriaEngine disabled.");

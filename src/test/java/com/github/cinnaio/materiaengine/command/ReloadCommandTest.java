@@ -3,6 +3,7 @@ package com.github.cinnaio.materiaengine.command;
 import com.github.cinnaio.materiaengine.feature.HarvestStats;
 import com.github.cinnaio.materiaengine.feature.HarvestPeriod;
 import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
+import com.github.cinnaio.materiaengine.feature.HarvestMenu;
 import com.github.cinnaio.materiaengine.feature.HarvestToolsFeature;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
@@ -20,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -30,17 +31,19 @@ class ReloadCommandTest {
     private final HarvestToolsFeature harvest = mock(HarvestToolsFeature.class);
     private final HarvestStats stats = mock(HarvestStats.class);
     private final HarvestReportExporter exporter = mock(HarvestReportExporter.class);
+    private final HarvestMenu menu = mock(HarvestMenu.class);
     private final MateriaEngineLang lang = mock(MateriaEngineLang.class);
     private final CommandSourceStack source = mock(CommandSourceStack.class);
     private final Player player = mock(Player.class);
     private final UUID playerId = UUID.randomUUID();
-    private final ReloadCommand command = new ReloadCommand(teaTable, List.of(machine), harvest, lang, stats, exporter);
+    private final ReloadCommand command = new ReloadCommand(teaTable, List.of(machine), harvest, lang, stats, exporter, menu);
 
     @BeforeEach
     void setup() {
         when(source.getSender()).thenReturn(player);
         when(player.getUniqueId()).thenReturn(playerId);
         when(player.getName()).thenReturn("Farmer");
+        when(player.hasPermission(anyString())).thenReturn(true);
         when(stats.enabled()).thenReturn(true);
         when(stats.persistenceReady()).thenReturn(true);
         when(stats.summary(nullable(UUID.class), any(HarvestPeriod.class))).thenReturn(new HarvestStats.Summary(2, 5, 3, 2, 1, 1));
@@ -64,12 +67,13 @@ class ReloadCommandTest {
         verify(player).sendMessage(contains("cgap:tea_shears"));
         verify(player).sendMessage(contains("cgap:fresh_tea_leaf_bud"));
         verify(player, never()).sendMessage(contains("{"));
-        assertEquals("materiaengine.admin", command.permission());
+        assertNull(command.permission());
     }
 
     @Test
     void consoleAndExplicitAllQueryGlobalStatistics() {
         CommandSender console = mock(CommandSender.class);
+        when(console.hasPermission(anyString())).thenReturn(true);
         when(source.getSender()).thenReturn(console);
         command.execute(source, new String[]{"harvest", "stats"});
         when(source.getSender()).thenReturn(player);
@@ -145,5 +149,24 @@ class ReloadCommandTest {
         verifyNoInteractions(exporter);
         verify(stats, never()).summary(any(), any());
         verify(player).sendMessage(contains("period must be"));
+    }
+
+    @Test
+    void ordinaryPlayersCanOpenAndQueryOnlyTheirOwnRecords() {
+        when(player.hasPermission("materiaengine.admin")).thenReturn(false);
+        when(player.hasPermission("materiaengine.harvest.others")).thenReturn(false);
+        command.execute(source, new String[]{"harvest"});
+        command.execute(source, new String[]{"harvest", "stats"});
+        command.execute(source, new String[]{"harvest", "stats", "all"});
+        command.execute(source, new String[]{"harvest", "menu", "all"});
+        command.execute(source, new String[]{"harvest", "export"});
+        command.execute(source, new String[]{"reload"});
+        verify(menu).open(player, playerId, "Farmer");
+        verify(menu, never()).open(any(), isNull(), anyString());
+        verify(stats).summary(playerId, HarvestPeriod.ALL);
+        verify(stats, never()).summary(isNull(), any());
+        verifyNoInteractions(exporter, teaTable, machine);
+        verify(player, times(4)).sendMessage(contains("do not have permission"));
+        assertFalse(command.suggest(source, new String[]{"harvest", ""}).contains("export"));
     }
 }
