@@ -6,13 +6,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.util.HashMap;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 
 public final class MateriaEngineLang {
     private final JavaPlugin plugin;
-    private final Map<String, YamlConfiguration> languages = new HashMap<>();
+    private volatile Map<String, YamlConfiguration> languages = Map.of();
 
     public MateriaEngineLang(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -22,8 +23,7 @@ public final class MateriaEngineLang {
     public void reload() {
         saveDefault("zh");
         saveDefault("us");
-        languages.put("zh", load("zh"));
-        languages.put("us", load("us"));
+        languages = Map.of("zh", load("zh"), "us", load("us"));
     }
 
     public String text(CommandSender sender, String key) {
@@ -47,7 +47,14 @@ public final class MateriaEngineLang {
     }
 
     private YamlConfiguration load(String language) {
-        return YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "lang/" + language + ".yml"));
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "lang/" + language + ".yml"));
+        try (var resource = plugin.getResource("lang/" + language + ".yml")) {
+            if (resource != null) configuration.setDefaults(YamlConfiguration.loadConfiguration(
+                    new InputStreamReader(resource, StandardCharsets.UTF_8)));
+        } catch (java.io.IOException error) {
+            plugin.getLogger().warning("Failed to load default language " + language + ": " + error.getMessage());
+        }
+        return configuration;
     }
 
     private static String language(Player player) {

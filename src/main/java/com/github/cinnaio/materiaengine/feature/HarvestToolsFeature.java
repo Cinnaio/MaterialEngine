@@ -4,12 +4,17 @@ import com.github.cinnaio.materiaengine.config.HarvestToolsConfig;
 import com.github.cinnaio.materiaengine.config.HarvestToolsConfig.Crop;
 import com.github.cinnaio.materiaengine.config.HarvestToolsConfig.Mode;
 import com.github.cinnaio.materiaengine.config.HarvestToolsConfig.Tool;
+import com.github.cinnaio.materiaengine.config.HarvestToolsConfig.Effect;
 import com.github.cinnaio.materiaengine.integration.BeaconEngineBridge;
+import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import com.github.cinnaio.materiaengine.util.MachineItems;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.SoundCategory;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
@@ -21,6 +26,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -28,6 +34,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 
@@ -37,34 +47,64 @@ public final class HarvestToolsFeature implements Listener {
     private final FruitRegrowth regrowth;
     private final RandomGenerator random;
     private final BeaconEngineBridge beacon;
+    private final MateriaEngineLang lang;
+    private final HarvestStats stats;
+    private final Map<UUID, Long> lastFeedback = new ConcurrentHashMap<>();
     private volatile HarvestToolsConfig config;
 
     public HarvestToolsFeature(JavaPlugin plugin, CraftEngineHook hook, BeaconEngineBridge beacon) {
-        this(plugin, hook, new FruitRegrowth(plugin, hook), HarvestToolsConfig.load(plugin.getConfig()), ThreadLocalRandom.current(), beacon);
+        this(plugin, hook, new FruitRegrowth(plugin, hook), HarvestToolsConfig.load(plugin.getConfig()),
+                ThreadLocalRandom.current(), beacon, null, null);
+        regrowth.start();
+    }
+
+    public HarvestToolsFeature(JavaPlugin plugin, CraftEngineHook hook, BeaconEngineBridge beacon,
+                               MateriaEngineLang lang, HarvestStats stats) {
+        this(plugin, hook, new FruitRegrowth(plugin, hook), HarvestToolsConfig.load(plugin.getConfig()),
+                ThreadLocalRandom.current(), beacon, lang, stats);
         regrowth.start();
     }
 
     HarvestToolsFeature(JavaPlugin plugin, CraftEngineHook hook, FruitRegrowth regrowth,
                         HarvestToolsConfig config, RandomGenerator random, BeaconEngineBridge beacon) {
+        this(plugin, hook, regrowth, config, random, beacon, null, null);
+    }
+
+    HarvestToolsFeature(JavaPlugin plugin, CraftEngineHook hook, FruitRegrowth regrowth,
+                        HarvestToolsConfig config, RandomGenerator random, BeaconEngineBridge beacon,
+                        MateriaEngineLang lang, HarvestStats stats) {
         this.plugin = plugin;
         this.hook = hook;
         this.regrowth = regrowth;
         this.config = config;
         this.random = random;
         this.beacon = beacon;
+        this.lang = lang;
+        this.stats = stats;
+        if (this.stats != null) this.stats.configure(config.stats());
     }
 
-    public void reload() {
+    public boolean reload() {
         plugin.reloadConfig();
         try {
-            config = HarvestToolsConfig.load(plugin.getConfig());
+            HarvestToolsConfig candidate = HarvestToolsConfig.load(plugin.getConfig());
+            if (stats != null) stats.configure(candidate.stats());
+            config = candidate;
+            return true;
         } catch (IllegalArgumentException error) {
             plugin.getLogger().warning("Harvest configuration rejected; keeping previous settings: " + error.getMessage());
+            return false;
         }
     }
 
     public void shutdown() {
         regrowth.shutdown();
+        lastFeedback.clear();
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        lastFeedback.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -81,67 +121,122 @@ public final class HarvestToolsFeature implements Listener {
         boolean sickle = settings.sickleItem().equals(itemId);
         Tool tool = settings.tools().get(itemId == null ? "" : itemId);
         if (!sickle && tool == null) return;
-        event.setCancelled(true);
-        if (player.hasCooldown(hand) || !hook.isReady()) return;
+        // Suppress vanilla hoe/shovel use while allowing the clicked container to open.
+        event.setUseItemInHand(Event.Result.DENY);
         if (tool != null && tool.mode() == Mode.FRUIT) {
             if (!canTrace(player, tool.reach())) return;
             var hit = player.rayTraceBlocks(tool.reach(), FluidCollisionMode.NEVER);
-            if (hit != null && hit.getHitBlock() != null && available(hit.getHitBlock())) {
-                if (harvestFruit(player, hand, hit.getHitBlock(), settings)) finish(player, hand);
+            Block target = hit == null ? null : hit.getHitBlock();
+            if (target == null || !available(target)) return;
+            String targetId = hook.getBlockId(target);
+            if (targetId == null || !settings.fruits().containsKey(targetId)) return;
+            event.setCancelled(true);
+            if (player.hasCooldown(hand)) {
+                feedback(player, settings, settings.feedback().cooldown(), "harvest.feedback.cooldown", null);
+                return;
+            }
+            if (!hook.isReady()) {
+                feedback(player, settings, settings.feedback().failure(), "harvest.feedback.unavailable", null);
+                return;
+            }
+            if (!Boolean.TRUE.equals(hook.getBooleanState(target, "fruiting"))) {
+                feedback(player, settings, settings.feedback().failure(), "harvest.feedback.no-fruit", null);
+                return;
+            }
+            HarvestResult result = harvestFruitResult(player, hand, target, settings);
+            if (result.harvested()) {
+                damage(player, tool.durabilityCost());
+                finish(player, hand, tool.cooldownTicks());
+                feedback(player, settings, settings.feedback().fruit(), "harvest.feedback.fruit", result.summary(), target.getLocation());
+            } else {
+                feedback(player, settings, settings.feedback().failure(), "harvest.feedback.failure", null);
             }
             return;
         }
         Block center = event.getClickedBlock();
         if (center == null || !available(center)) return;
         String centerId = blockId(center);
-        if (!mature(center, settings.crops().get(centerId))) return;
-        if (!sickle && !tool.targets().containsKey(centerId)) return;
-        boolean harvested = harvestCrop(player, hand, center, tool, settings);
-        if (!harvested) return;
-        damage(player);
+        Crop centerCrop = settings.crops().get(centerId);
+        boolean recognized = centerCrop != null && (sickle || tool.targets().containsKey(centerId));
+        if (!recognized) return;
+        event.setCancelled(true);
+        if (player.hasCooldown(hand)) {
+            feedback(player, settings, settings.feedback().cooldown(), "harvest.feedback.cooldown", null);
+            return;
+        }
+        if (!hook.isReady()) {
+            feedback(player, settings, settings.feedback().failure(), "harvest.feedback.unavailable", null);
+            return;
+        }
+        if (!mature(center, centerCrop)) {
+            feedback(player, settings, settings.feedback().failure(), "harvest.feedback.immature", null);
+            return;
+        }
+        HarvestResult result = harvestCropResult(player, hand, center, tool, settings);
+        if (!result.harvested()) {
+            feedback(player, settings, settings.feedback().failure(), "harvest.feedback.failure", null);
+            return;
+        }
+        int cooldown = sickle ? settings.sickleCooldownTicks() : tool.cooldownTicks();
+        damage(player, sickle ? settings.sickleDurabilityCost() : tool.durabilityCost());
+        HarvestSummary summary = result.summary();
         if (sickle) {
             for (int dx = -settings.radius(); dx <= settings.radius(); dx++) {
                 for (int dz = -settings.radius(); dz <= settings.radius(); dz++) {
                     if (dx == 0 && dz == 0) continue;
                     if (!hook.isCustomItem(player.getInventory().getItemInMainHand(), itemId)) {
-                        if (harvested) finish(player, hand);
+                        finish(player, hand, cooldown);
+                        feedback(player, settings, settings.feedback().success(), "harvest.feedback.success", summary, center.getLocation());
                         return;
                     }
                     Block block = center.getRelative(dx, 0, dz);
-                    if (available(block) && harvestCrop(player, hand, block, null, settings)) {
-                        harvested = true;
-                        damage(player);
+                    if (available(block)) {
+                        HarvestResult neighbor = harvestCropResult(player, hand, block, null, settings);
+                        if (neighbor.harvested()) {
+                            summary = summary.add(neighbor.summary());
+                            damage(player, settings.sickleDurabilityCost());
+                        }
                     }
                 }
             }
         }
-        if (harvested) finish(player, hand);
+        finish(player, hand, cooldown);
+        feedback(player, settings, summary.qualityItems() > 0
+                ? settings.feedback().quality() : summary.bonusItems() > 0
+                ? settings.feedback().bonus() : settings.feedback().success(),
+                summary.qualityItems() > 0 ? "harvest.feedback.quality"
+                        : summary.bonusItems() > 0 ? "harvest.feedback.bonus" : "harvest.feedback.success", summary, center.getLocation());
     }
 
     boolean harvestCrop(Player player, ItemStack hand, Block block, Tool tool, HarvestToolsConfig settings) {
+        return harvestCropResult(player, hand, block, tool, settings).harvested();
+    }
+
+    private HarvestResult harvestCropResult(Player player, ItemStack hand, Block block, Tool tool,
+                                            HarvestToolsConfig settings) {
         String id = blockId(block);
         Crop crop = settings.crops().get(id);
-        if (!mature(block, crop) || (tool != null && !tool.targets().containsKey(id))) return false;
+        if (!mature(block, crop) || (tool != null && !tool.targets().containsKey(id))) return HarvestResult.empty();
         int seedSlot = findSeed(player, crop.seed());
-        if (!hook.canHarvest(player, block, seedSlot >= 0)) return false;
+        if (!hook.canHarvest(player, block, seedSlot >= 0)) return HarvestResult.empty();
         boolean custom = !id.startsWith("minecraft:");
         List<ItemStack> drops;
         if (custom) {
             drops = hook.customHarvestDrops(player, block);
-            if (drops == null) return false;
+            if (drops == null) return HarvestResult.empty();
         } else {
             BlockBreakEvent breaking = new BlockBreakEvent(block, player);
             Bukkit.getPluginManager().callEvent(breaking);
-            if (breaking.isCancelled()) return false;
+            if (breaking.isCancelled()) return HarvestResult.empty();
             drops = breaking.isDropItems() ? new ArrayList<>(block.getDrops(hand, player)) : new ArrayList<>();
         }
-        applyBonus(drops, id, tool);
+        BonusApplication application = applyBonus(drops, id, tool);
         PlayerHarvestBlockEvent harvesting = new PlayerHarvestBlockEvent(player, block, EquipmentSlot.HAND, drops);
         Bukkit.getPluginManager().callEvent(harvesting);
-        if (harvesting.isCancelled() || !id.equals(blockId(block)) || !mature(block, crop)) return false;
+        if (harvesting.isCancelled() || !id.equals(blockId(block)) || !mature(block, crop)) return HarvestResult.empty();
         // Recheck inventory after callbacks. Newly awarded seeds are never used for this replant.
         seedSlot = findSeed(player, crop.seed());
-        if (seedSlot >= 0 && !hook.canHarvest(player, block, true)) return false;
+        if (seedSlot >= 0 && !hook.canHarvest(player, block, true)) return HarvestResult.empty();
         boolean changed;
         if (seedSlot >= 0) {
             if (custom) changed = hook.setIntState(block, id, "age", 0);
@@ -161,57 +256,80 @@ public final class HarvestToolsFeature implements Listener {
             block.setType(Material.AIR, true);
             changed = true;
         }
-        if (changed) deliver(player, block, harvesting.getItemsHarvested(), settings.basketItem());
-        return changed;
+        if (!changed) return HarvestResult.empty();
+        List<ItemStack> harvested = harvesting.getItemsHarvested();
+        String toolId = hook.getItemId(hand);
+        if (toolId == null || toolId.isBlank()) toolId = settings.sickleItem();
+        Map<String, HarvestStats.Output> produced = application.retained(deliver(player, block, harvested, settings.basketItem()));
+        if (stats != null) stats.record(player, toolId, id, produced);
+        return HarvestResult.success(produced);
     }
 
     boolean harvestFruit(Player player, ItemStack hand, Block block, HarvestToolsConfig settings) {
+        return harvestFruitResult(player, hand, block, settings).harvested();
+    }
+
+    private HarvestResult harvestFruitResult(Player player, ItemStack hand, Block block, HarvestToolsConfig settings) {
         String id = hook.getBlockId(block);
         String fruit = settings.fruits().get(id == null ? "" : id);
         if (fruit == null || !Boolean.TRUE.equals(hook.getBooleanState(block, "fruiting"))
-                || !hook.canHarvest(player, block, false)) return false;
+                || !hook.canHarvest(player, block, false)) return HarvestResult.empty();
         ItemStack drop = hook.createItem(fruit);
-        if (!MachineItems.hasItem(drop)) return false;
+        if (!MachineItems.hasItem(drop)) return HarvestResult.empty();
         PlayerHarvestBlockEvent event = new PlayerHarvestBlockEvent(player, block, EquipmentSlot.HAND,
                 new ArrayList<>(List.of(drop)));
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled() || !id.equals(hook.getBlockId(block))
-                || !Boolean.TRUE.equals(hook.getBooleanState(block, "fruiting"))) return false;
-        if (!hook.setBooleanState(block, id, "fruiting", false)) return false;
-        regrowth.record(block, id, settings.regrowSeconds());
-        deliver(player, block, event.getItemsHarvested(), settings.basketItem());
-        damage(player);
-        return true;
+                || !Boolean.TRUE.equals(hook.getBooleanState(block, "fruiting"))) return HarvestResult.empty();
+        if (!hook.setBooleanState(block, id, "fruiting", false)) return HarvestResult.empty();
+        regrowth.record(block, id, settings.regrowSeconds(id));
+        List<ItemStack> harvested = event.getItemsHarvested();
+        String toolId = hook.getItemId(hand);
+        if (toolId == null || toolId.isBlank()) toolId = "unknown";
+        Map<String, HarvestStats.Output> produced = deliver(player, block, harvested, settings.basketItem());
+        if (stats != null) stats.record(player, toolId, id, produced);
+        return HarvestResult.success(produced);
     }
 
-    void applyBonus(List<ItemStack> drops, String crop, Tool tool) {
-        if (tool == null) return;
+    BonusApplication applyBonus(List<ItemStack> drops, String crop, Tool tool) {
+        if (tool == null) return BonusApplication.empty();
         String product = tool.targets().get(crop);
         boolean productPresent = false;
+        Map<String, Long> baseline = new HashMap<>();
+        Map<String, Long> quality = new HashMap<>();
+        Map<String, Long> bonus = new HashMap<>();
+        for (ItemStack drop : drops) {
+            String id = MachineItems.itemIdOf(hook, drop);
+            if (id != null) baseline.merge(id, (long) drop.getAmount(), Long::sum);
+        }
         for (int i = 0; i < drops.size(); i++) {
             ItemStack original = drops.get(i);
             String id = MachineItems.itemIdOf(hook, original);
             if (id == null) continue;
             productPresent |= id.equals(product);
-            String replacement = tool.replacement(id, random);
+            String replacement = tool.replacement(id, crop, random);
             if (!replacement.equals(id)) {
                 ItemStack upgraded = hook.createItem(replacement);
                 if (MachineItems.hasItem(upgraded)) {
                     upgraded.setAmount(original.getAmount());
                     drops.set(i, upgraded);
+                    quality.merge(replacement, (long) Math.max(0, original.getAmount()), Long::sum);
                 }
             }
         }
-        if (tool.mode() == Mode.BONUS && productPresent && random.nextDouble() < tool.chance()) {
+        if (tool.mode() == Mode.BONUS && productPresent && tool.bonusAmount() > 0 && random.nextDouble() < tool.chanceFor(crop)) {
             ItemStack extra = hook.createItem(product);
             if (MachineItems.hasItem(extra)) {
-                extra.setAmount(1);
+                extra.setAmount(tool.bonusAmount());
                 drops.add(extra);
+                bonus.put(product, (long) tool.bonusAmount());
             }
         }
+        return new BonusApplication(baseline, quality, bonus);
     }
 
-    void deliver(Player player, Block block, List<ItemStack> drops, String basket) {
+    Map<String, HarvestStats.Output> deliver(Player player, Block block, List<ItemStack> drops, String basket) {
+        Map<String, HarvestStats.Output> produced = new HashMap<>();
         boolean collect = !basket.isBlank() && hook.isCustomItem(player.getInventory().getItemInOffHand(), basket);
         for (ItemStack drop : drops) {
             if (!MachineItems.hasItem(drop)) continue;
@@ -220,11 +338,22 @@ public final class HarvestToolsFeature implements Listener {
                 String id = MachineItems.itemIdOf(hook, drop);
                 var leftovers = player.getInventory().addItem(drop).values();
                 int accepted = amount - leftovers.stream().mapToInt(ItemStack::getAmount).sum();
-                leftovers.forEach(leftover ->
-                        block.getWorld().dropItemNaturally(block.getLocation().add(.5, .5, .5), leftover));
-                if (accepted > 0) beacon.recordItemObtained(player, id, accepted);
-            } else block.getWorld().dropItemNaturally(block.getLocation().add(.5, .5, .5), drop);
+                leftovers.forEach(leftover -> dropOutput(block, leftover, produced));
+                if (accepted > 0 && id != null) {
+                    produced.merge(id, new HarvestStats.Output(accepted, 0, 0, 0), HarvestStats.Output::add);
+                    beacon.recordItemObtained(player, id, accepted);
+                }
+            } else dropOutput(block, drop, produced);
         }
+        return produced;
+    }
+
+    private void dropOutput(Block block, ItemStack drop, Map<String, HarvestStats.Output> produced) {
+        var entity = block.getWorld().dropItemNaturally(block.getLocation().add(.5, .5, .5), drop);
+        if (entity == null || !entity.isValid()) return;
+        ItemStack spawned = entity.getItemStack();
+        String id = MachineItems.itemIdOf(hook, spawned);
+        if (id != null) produced.merge(id, new HarvestStats.Output(0, spawned.getAmount(), 0, 0), HarvestStats.Output::add);
     }
 
     private int findSeed(Player player, String id) {
@@ -265,12 +394,87 @@ public final class HarvestToolsFeature implements Listener {
         return true;
     }
 
-    private void damage(Player player) {
-        if (player.getGameMode() != GameMode.CREATIVE) player.damageItemStack(EquipmentSlot.HAND, 1);
+    private void damage(Player player, int amount) {
+        if (amount > 0 && player.getGameMode() != GameMode.CREATIVE) {
+            player.damageItemStack(EquipmentSlot.HAND, amount);
+        }
     }
 
-    private void finish(Player player, ItemStack hand) {
+    private void finish(Player player, ItemStack hand, int cooldownTicks) {
         player.swingMainHand();
-        player.setCooldown(hand, 4);
+        if (cooldownTicks > 0) player.setCooldown(hand, cooldownTicks);
+    }
+
+    private void feedback(Player player, HarvestToolsConfig settings, Effect effect, String key, HarvestSummary summary) {
+        feedback(player, settings, effect, key, summary, player.getLocation());
+    }
+
+    private void feedback(Player player, HarvestToolsConfig settings, Effect effect, String key,
+                          HarvestSummary summary, Location target) {
+        HarvestToolsConfig.Feedback feedback = settings.feedback();
+        if (!feedback.enabled()) return;
+        long now = System.nanoTime();
+        Long last = lastFeedback.get(player.getUniqueId());
+        if (summary == null && last != null && now - last < feedback.failureIntervalTicks() * 50_000_000L) return;
+        lastFeedback.put(player.getUniqueId(), now);
+        playEffect(player, target, effect, feedback.sounds(), feedback.particles());
+        if (feedback.actionbar() && lang != null) {
+            String message = lang.text(player, key);
+            if (summary != null) {
+                message = message.replace("{blocks}", Long.toString(summary.blocks()))
+                        .replace("{items}", Long.toString(summary.items()))
+                        .replace("{quality}", Long.toString(summary.qualityItems()))
+                        .replace("{bonus}", Long.toString(summary.bonusItems()))
+                        .replace("{collected}", Long.toString(summary.collectedItems()))
+                        .replace("{dropped}", Long.toString(summary.droppedItems()));
+            }
+            player.sendActionBar(message);
+        }
+    }
+
+    private void playEffect(Player player, Location target, Effect effect, boolean sounds, boolean particles) {
+        if (effect == null || target == null || target.getWorld() == null) return;
+        Location location = target.clone().add(.5, .5, .5);
+        if (sounds && !effect.sound().isBlank()) {
+            player.playSound(location, effect.sound(), SoundCategory.PLAYERS, effect.volume(), effect.pitch());
+        }
+        if (particles && effect.count() > 0 && !effect.particle().isBlank()) {
+            player.spawnParticle(Particle.valueOf(effect.particle()), location,
+                    effect.count(), effect.offset(), effect.offset(), effect.offset(), 0);
+        }
+    }
+
+    private record BonusApplication(Map<String, Long> baseline, Map<String, Long> quality, Map<String, Long> bonus) {
+        private static BonusApplication empty() { return new BonusApplication(Map.of(), Map.of(), Map.of()); }
+
+        private Map<String, HarvestStats.Output> retained(Map<String, HarvestStats.Output> produced) {
+            Map<String, HarvestStats.Output> result = new HashMap<>();
+            produced.forEach((id, value) -> {
+                long extra = Math.max(0, value.items() - baseline.getOrDefault(id, 0L));
+                result.put(id, new HarvestStats.Output(value.collected(), value.dropped(),
+                        Math.min(extra, quality.getOrDefault(id, 0L)), Math.min(extra, bonus.getOrDefault(id, 0L))));
+            });
+            return result;
+        }
+    }
+
+    private record HarvestResult(boolean harvested, HarvestSummary summary) {
+        private static HarvestResult empty() { return new HarvestResult(false, new HarvestSummary(0, 0, 0, 0, 0, 0)); }
+
+        private static HarvestResult success(Map<String, HarvestStats.Output> produced) {
+            HarvestSummary summary = new HarvestSummary(1, 0, 0, 0, 0, 0);
+            for (HarvestStats.Output value : produced.values()) {
+                summary = summary.add(new HarvestSummary(0, value.items(), value.quality(), value.bonus(), value.collected(), value.dropped()));
+            }
+            return new HarvestResult(true, summary);
+        }
+    }
+
+    private record HarvestSummary(long blocks, long items, long qualityItems, long bonusItems, long collectedItems, long droppedItems) {
+        private HarvestSummary add(HarvestSummary other) {
+            return new HarvestSummary(blocks + other.blocks, items + other.items,
+                    qualityItems + other.qualityItems, bonusItems + other.bonusItems,
+                    collectedItems + other.collectedItems, droppedItems + other.droppedItems);
+        }
     }
 }

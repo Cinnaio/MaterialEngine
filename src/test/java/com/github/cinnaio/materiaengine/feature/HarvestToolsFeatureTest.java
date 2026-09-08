@@ -2,6 +2,7 @@ package com.github.cinnaio.materiaengine.feature;
 
 import com.github.cinnaio.materiaengine.config.HarvestToolsConfig;
 import com.github.cinnaio.materiaengine.integration.BeaconEngineBridge;
+import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
 import com.github.cinnaio.materiaengine.util.CraftEngineHook;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -9,6 +10,9 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.SoundCategory;
+import org.bukkit.Particle;
+import org.bukkit.entity.Item;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
@@ -35,6 +39,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.function.Consumer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,6 +58,9 @@ class HarvestToolsFeatureTest {
     private final World world = mock(World.class);
     private final FruitRegrowth regrowth = mock(FruitRegrowth.class);
     private final BeaconEngineBridge beacon = mock(BeaconEngineBridge.class);
+    private final HarvestStats stats = mock(HarvestStats.class);
+    private final MateriaEngineLang lang = mock(MateriaEngineLang.class);
+    private final JavaPlugin plugin = mock(JavaPlugin.class);
     private final Material itemMaterial = mock(Material.class);
     private final ItemStack[] storage = new ItemStack[36];
     private MockedStatic<Bukkit> bukkit;
@@ -65,6 +76,9 @@ class HarvestToolsFeatureTest {
         bukkit.when(() -> Bukkit.isOwnedByCurrentRegion(eq(world), anyInt(), anyInt())).thenReturn(true);
         when(player.getInventory()).thenReturn(inventory);
         when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(player.getLocation()).thenAnswer(ignored -> new Location(world, 0, 64, 0));
+        when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         when(player.getEyeLocation()).thenAnswer(ignored -> new Location(world, 0, 65, 0));
         when(inventory.getStorageContents()).thenReturn(storage);
         when(inventory.getItem(anyInt())).thenAnswer(call -> storage[call.getArgument(0, Integer.class)]);
@@ -74,6 +88,12 @@ class HarvestToolsFeatureTest {
         when(block.getWorld()).thenReturn(world);
         when(block.getLocation()).thenAnswer(ignored -> new Location(world, 0, 64, 0));
         when(world.isChunkLoaded(anyInt(), anyInt())).thenReturn(true);
+        when(world.dropItemNaturally(any(Location.class), any(ItemStack.class))).thenAnswer(call -> {
+            Item entity = mock(Item.class);
+            when(entity.isValid()).thenReturn(true);
+            when(entity.getItemStack()).thenReturn(call.getArgument(1));
+            return entity;
+        });
         when(hook.isReady()).thenReturn(true);
         when(hook.getBlockId(block)).thenReturn("cgap:mint_crop");
         when(hook.getIntState(block, "age")).thenReturn(3);
@@ -85,7 +105,11 @@ class HarvestToolsFeatureTest {
         yaml.set("harvest-tools.tools.herb-shears.chance", 1);
         yaml.set("harvest-tools.tools.tea-shears.chance", 1);
         config = HarvestToolsConfig.load(yaml);
-        feature = new HarvestToolsFeature(mock(JavaPlugin.class), hook, regrowth, config, new Random(12), beacon);
+        when(plugin.getConfig()).thenReturn(yaml);
+        var language = YamlConfiguration.loadConfiguration(new InputStreamReader(
+                getClass().getResourceAsStream("/lang/us.yml"), StandardCharsets.UTF_8));
+        when(lang.text(eq(player), anyString())).thenAnswer(call -> language.getString(call.getArgument(1)));
+        feature = new HarvestToolsFeature(plugin, hook, regrowth, config, new Random(12), beacon, lang, stats);
         hand = stack("cgap:herb_shears", 1);
         when(inventory.getItemInMainHand()).thenReturn(hand);
         when(hook.customHarvestDrops(player, block)).thenAnswer(ignored -> new ArrayList<>(
@@ -108,6 +132,13 @@ class HarvestToolsFeatureTest {
 
     private PlayerInteractEvent interact(EquipmentSlot slot) {
         return new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, hand, block, BlockFace.UP, slot);
+    }
+
+    private void configure(Consumer<org.bukkit.configuration.ConfigurationSection> changes) {
+        var yaml = plugin.getConfig();
+        changes.accept(yaml);
+        config = HarvestToolsConfig.load(yaml);
+        feature = new HarvestToolsFeature(plugin, hook, regrowth, config, new Random(12), beacon, lang, stats);
     }
 
     @Test
@@ -142,6 +173,7 @@ class HarvestToolsFeatureTest {
         assertFalse(feature.harvestCrop(player, hand, block, null, config));
         verify(hook, never()).removeHarvestedBlock(any(), any());
         verify(hook, never()).setIntState(any(), any(), any(), anyInt());
+        verify(stats, never()).record(any(), anyString(), anyString(), anyMap());
     }
 
     @Test
@@ -247,6 +279,152 @@ class HarvestToolsFeatureTest {
         feature.onInteract(event);
         assertEquals(Event.Result.DENY, event.useInteractedBlock());
         verify(hook, never()).customHarvestDrops(any(), any());
+    }
+
+    @Test
+    void unrelatedBlockInteractionIsNotCancelledByHarvestTool() {
+        when(hook.getBlockId(block)).thenReturn("cgap:tea_table");
+        var event = interact(EquipmentSlot.HAND);
+        feature.onInteract(event);
+        assertNotEquals(Event.Result.DENY, event.useInteractedBlock());
+        assertEquals(Event.Result.DENY, event.useItemInHand());
+        verify(hook, never()).customHarvestDrops(any(), any());
+        verify(player, never()).damageItemStack(any(EquipmentSlot.class), anyInt());
+    }
+
+    @Test
+    void configuredFeedbackAndActionCostsApplyOnceToSuccessfulHarvest() {
+        var yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
+                getClass().getResourceAsStream("/config.yml"), StandardCharsets.UTF_8));
+        yaml.set("harvest-tools.tools.herb-shears.chance", 0);
+        yaml.set("harvest-tools.tools.herb-shears.cooldown-ticks", 12);
+        yaml.set("harvest-tools.tools.herb-shears.durability-cost", 2);
+        yaml.set("harvest-tools.feedback.particles", false);
+        config = HarvestToolsConfig.load(yaml);
+        feature = new HarvestToolsFeature(plugin, hook, regrowth, config, new Random(12), beacon, lang, stats);
+        Location location = new Location(world, 0, 64, 0);
+        when(player.getLocation()).thenReturn(location);
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player).damageItemStack(EquipmentSlot.HAND, 2);
+        verify(player).setCooldown(hand, 12);
+        verify(player).playSound(new Location(world, .5, 64.5, .5), "minecraft:block.grass.break", SoundCategory.PLAYERS, 0.65f, 1.1f);
+    }
+
+    @Test
+    void ninePlantsProduceOneFeedbackAndNineStatisticsEntries() {
+        hand = stack("cgap:sickle", 1);
+        when(inventory.getItemInMainHand()).thenReturn(hand);
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            if (dx == 0 && dz == 0) continue;
+            Block neighbor = mock(Block.class);
+            when(block.getRelative(dx, 0, dz)).thenReturn(neighbor);
+            when(neighbor.getWorld()).thenReturn(world);
+            Location location = new Location(world, dx, 64, dz);
+            when(neighbor.getLocation()).thenReturn(location);
+            when(hook.getBlockId(neighbor)).thenReturn("cgap:mint_crop");
+            when(hook.getIntState(neighbor, "age")).thenReturn(3);
+            when(hook.removeHarvestedBlock(neighbor, player)).thenReturn(true);
+            ItemStack mint = stack("cgap:fresh_mint", 1);
+            when(hook.customHarvestDrops(player, neighbor)).thenReturn(new ArrayList<>(List.of(mint)));
+        }
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player, times(9)).damageItemStack(EquipmentSlot.HAND, 1);
+        verify(player).setCooldown(hand, 4);
+        verify(player).sendActionBar(contains("Harvested 9"));
+        verify(player, times(1)).playSound(any(Location.class), anyString(), any(SoundCategory.class), anyFloat(), anyFloat());
+        verify(player).spawnParticle(eq(Particle.HAPPY_VILLAGER), any(Location.class), eq(4), eq(.25), eq(.25), eq(.25), eq(0.0));
+        verify(stats, times(9)).record(eq(player), eq("cgap:sickle"), eq("cgap:mint_crop"), anyMap());
+    }
+
+    @Test
+    void basketStatisticsDistinguishAcceptedOverflowAndRetainedBonus() {
+        ItemStack basket = stack("cgap:harvest_basket", 1);
+        when(inventory.getItemInOffHand()).thenReturn(basket);
+        when(hook.createItem("cgap:fresh_mint")).thenAnswer(ignored -> stack("cgap:fresh_mint", 1));
+        ItemStack overflow = stack("cgap:fresh_mint", 2);
+        when(inventory.addItem(any(ItemStack.class))).thenAnswer(call -> {
+            ItemStack item = call.getArgument(0);
+            return new HashMap<>(item.getAmount() == 3 ? Map.of(0, overflow) : Map.of());
+        });
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(stats).record(player, "cgap:herb_shears", "cgap:mint_crop", Map.of(
+                "cgap:fresh_mint", new HarvestStats.Output(2, 2, 0, 1),
+                "cgap:mint_seeds", new HarvestStats.Output(1, 0, 0, 0)));
+        verify(player).sendActionBar(contains("Bonus 1"));
+        verify(player).sendActionBar(contains("Stored 3 / Dropped 2"));
+        verify(beacon, times(2)).recordItemObtained(player, "cgap:fresh_mint", 1);
+    }
+
+    @Test
+    void eventSuppressedBonusAndCancelledItemSpawnsDoNotInflateStatistics() {
+        when(hook.createItem("cgap:fresh_mint")).thenAnswer(ignored -> stack("cgap:fresh_mint", 1));
+        doAnswer(call -> {
+            if (call.getArgument(0) instanceof PlayerHarvestBlockEvent event) event.getItemsHarvested().removeLast();
+            return null;
+        }).when(events).callEvent(any(Event.class));
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(stats).record(player, "cgap:herb_shears", "cgap:mint_crop", Map.of(
+                "cgap:fresh_mint", new HarvestStats.Output(0, 3, 0, 0),
+                "cgap:mint_seeds", new HarvestStats.Output(0, 1, 0, 0)));
+        clearInvocations(stats, player);
+        Item cancelled = mock(Item.class);
+        when(world.dropItemNaturally(any(), any())).thenReturn(cancelled);
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(stats).record(player, "cgap:herb_shears", "cgap:mint_crop", Map.of());
+        verify(player).sendActionBar(contains("Stored 0 / Dropped 0"));
+    }
+
+    @Test
+    void qualityStatisticsUseFinalItemIdsAndRetainedUpgradeAmounts() {
+        configure(yaml -> yaml.createSection("harvest-tools.tools.tea-shears.quality-targets",
+                Map.of("cgap:fresh_tea_leaf_bud", 1)));
+        hand = stack("cgap:tea_shears", 1);
+        when(inventory.getItemInMainHand()).thenReturn(hand);
+        when(hook.getBlockId(block)).thenReturn("cgap:tea_tree_crop");
+        when(hook.getIntState(block, "age")).thenReturn(6);
+        ItemStack leaf = stack("cgap:fresh_tea_leaf_old_leaf", 2);
+        ItemStack premium = stack("cgap:fresh_tea_leaf_bud", 2);
+        doReturn(new ArrayList<>(List.of(leaf, premium))).when(hook).customHarvestDrops(player, block);
+        when(hook.createItem("cgap:fresh_tea_leaf_bud")).thenAnswer(ignored -> stack("cgap:fresh_tea_leaf_bud", 1));
+        doAnswer(call -> {
+            if (call.getArgument(0) instanceof PlayerHarvestBlockEvent event) event.getItemsHarvested().getFirst().setAmount(1);
+            return null;
+        }).when(events).callEvent(any(Event.class));
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(stats).record(player, "cgap:tea_shears", "cgap:tea_tree_crop", Map.of(
+                "cgap:fresh_tea_leaf_bud", new HarvestStats.Output(0, 3, 1, 0)));
+        verify(player).sendActionBar(contains("Upgraded 1"));
+    }
+
+    @Test
+    void failureFeedbackIsThrottledAndCanBeDisabled() {
+        configure(yaml -> yaml.set("harvest-tools.feedback.failure-interval-ticks", 200));
+        when(hook.getIntState(block, "age")).thenReturn(2);
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player, times(1)).sendActionBar(contains("not mature"));
+        verify(stats, never()).record(any(), any(), any(), any());
+        configure(yaml -> yaml.set("harvest-tools.feedback.enabled", false));
+        clearInvocations(player);
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player, never()).sendActionBar(anyString());
+        verify(player, never()).playSound(any(Location.class), anyString(), any(SoundCategory.class), anyFloat(), anyFloat());
+    }
+
+    @Test
+    void validReloadAppliesSettingsAndInvalidParticlePreservesLastConfiguration() {
+        plugin.getConfig().set("harvest-tools.tools.herb-shears.cooldown-ticks", 17);
+        plugin.getConfig().set("harvest-tools.feedback.actionbar", false);
+        assertTrue(feature.reload());
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player).setCooldown(hand, 17);
+        verify(player, never()).sendActionBar(anyString());
+        plugin.getConfig().set("harvest-tools.feedback.success.particle", "INVALID");
+        plugin.getConfig().set("harvest-tools.tools.herb-shears.cooldown-ticks", 90);
+        assertFalse(feature.reload());
+        clearInvocations(player);
+        feature.onInteract(interact(EquipmentSlot.HAND));
+        verify(player).setCooldown(hand, 17);
     }
 
     @Test

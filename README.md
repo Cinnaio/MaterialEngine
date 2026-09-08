@@ -97,6 +97,39 @@ machines:
 
 验证：`./gradlew test build`。指定 `-PcraftEngineRuntimeJar=<服务端 CraftEngine jar>` 可额外核对该 JAR 的采收 API 签名。资源包侧使用 `_tools/validate_teastory_harvest_tools.py --materia-config <本仓库 src/main/resources/config.yml>` 验证工具 ID、种子、成熟阶段、果树、模型、材质、配方与翻译。
 
+### 采收反馈与统计（2.2.0-SNAPSHOT）
+
+沿用 CGAP-RESOURCE `0.18.46`，无需添加声音文件或更新工具模型。成功采收在目标位置向操作者播放声音和粒子，ActionBar 显示采收株数、直接入包和落地数量；品质提升、额外产量和采果使用各自的反馈。一次范围收割只汇总反馈一次，未成熟、未结果、服务不可用、取消或保护阻止时显示对应提示，失败与冷却提示默认至少间隔 20 tick。工具仍拦截原版锄地/铲路行为，同时允许箱子及机器等无关方块的正常交互。
+
+参数全部放在 `config.yml`，通过 `/me reload` 重载；缺少的新字段自动继承随包默认值，已有自定义语言文件也继承新增消息。无效粒子配置会拒绝整份采收设置并保留上次有效值，命令明确报告采收配置未生效。
+
+| 配置路径 | 默认值与边界 |
+| --- | --- |
+| `harvest-tools.cooldown-ticks` / `durability-cost` | 每次动作冷却 4 tick，每株耐久消耗 1；分别限制在 0–200 / 0–100，0 表示不施加冷却/不损耗。 |
+| `harvest-tools.tools.<工具>.cooldown-ticks` / `durability-cost` | 可覆盖通用值；镰刀单独使用 `sickle.cooldown-ticks` / `sickle.durability-cost`。 |
+| `harvest-tools.tools.<工具>.chance` / `target-chances.<作物ID>` | 主工具概率及单作物覆盖，范围 0–1；品质转换仍使用已有 `quality-sources` 和 `quality-targets`。 |
+| `harvest-tools.tools.<工具>.bonus-amount` | 额外产量模式默认增加 1 件，可设 0–64；不改变种子掉落。 |
+| `sickle.radius` / `harvest-tools.tools.fruit-picker.reach` | 镰刀半径默认 1（3×3），范围 0–2；采果射程默认 5 格，范围 1–6。 |
+| `harvest-tools.regrow-seconds` / `regrow-overrides.<树叶ID>` | 默认 1200 秒，可按树叶种类覆盖，范围 60–604800 秒；只影响新采收记录，已有区块到期时间不变。 |
+| `harvest-tools.feedback` | 总开关、ActionBar、声音和粒子可分别关闭；`success/bonus/quality/fruit/failure/cooldown` 可配声音、音量、音调、粒子、数量和范围。粒子仅接受无需额外数据的 Bukkit 名称，空名称表示关闭。 |
+| `harvest-tools.feedback.failure-interval-ticks` | 默认 20，范围 0–200；失败/冷却提示也不会立即覆盖最近的成功反馈。 |
+| `harvest-tools.stats.enabled` / `include-creative` / `flush-seconds` | 默认开启统计、排除创造模式，每 30 秒保存；保存间隔范围 5–3600 秒。关闭统计仅暂停新增记录。 |
+
+统计按玩家 UUID、主工具 ID、作物/树叶 ID 保存采收次数，并按具体产物 ID 保存数量，因此单芽、一芽一叶等品质可分别查看。统计只在成功改变目标并完成掉落处理后累计，包含原掉落表的种子；入包数按采收篓实际接收计算，落地数按成功生成的物品实体计算。品质提升与额外产量按事件处理后仍可确认的增量记录，取消的采收或被移除的奖励不增加这些计数。
+
+落地表示本次产出，不表示已被玩家捡起；BeaconEngine 仍只在直接入包时由 MateriaEngine 调用物品获得接口，落地物品由 BeaconEngine 原有拾取监听统计，避免重复上报。
+
+```text
+/me harvest stats                    查看自己的统计，控制台默认查看全服
+/me harvest stats all                查看全服汇总
+/me harvest stats <在线玩家名或UUID>   查看指定玩家；离线玩家使用 UUID
+/me reload                           重载参数与中英文消息
+```
+
+命令需要 `materiaengine.admin` 权限。输出包含总计、采收次数最多的五个工具/作物组合，以及产量最多的五种产物；完整明细保存在 `plugins/MateriaEngine/harvest_stats.db` 的 `harvest_stats` 和 `harvest_outputs` 表。
+
+数据库只在启动时加载，采收路径更新内存；Paper/Folia 异步定时器以事务批量保存变更行，写入失败后保留待写记录供下个周期重试，正常停服保存最后一批。强制终止进程可能丢失尚未保存的数据，最多约一个保存周期。数据库加载失败会明确记录错误并阻止覆盖已有文件，需要修复原因后重启。自动化测试覆盖 SQLite 重开、重复写入、并发更新、事务回滚与重试；声音、粒子和保护插件的真实客户端表现仍需服务端验收。
+
 ## 关键类
 
 ```text

@@ -1383,6 +1383,8 @@ machines:
 sickle:
   item: cgap:sickle
   radius: 1
+  cooldown-ticks: 4
+  durability-cost: 1
   crops:
     cgap:tea_tree_crop: { seed: cgap:tea_seeds, mature-age: 6 }
     cgap:jasmine_flower_crop: { seed: cgap:jasmine_seeds, mature-age: 3 }
@@ -1409,9 +1411,15 @@ sickle:
 harvest-tools:
   enabled: true
   basket: cgap:harvest_basket
+  # 通用采收动作参数；单个工具可在 tools.<name> 下覆盖。
+  cooldown-ticks: 4
+  durability-cost: 1
   # 自然生成的树叶采后等待 20 分钟，在原区块内持久化；区块加载时每分钟检查一次。
   # 离线时间计入等待，未加载区块不会强制加载；已拆除树叶不会重新放置。
   regrow-seconds: 1200
+  # 按树叶种类覆盖重新结果秒数；仅影响新采收记录，不重写已有到期时间。
+  # 例如 cgap:peach_leaves: 1800；范围 60 ~ 604800 秒。
+  regrow-overrides: {}
   fruits:
     cgap:peach_leaves: cgap:peach
     cgap:lemon_leaves: cgap:lemon
@@ -1419,6 +1427,61 @@ harvest-tools:
     cgap:pomelo_leaves: cgap:pomelo
     cgap:orange_leaves: cgap:orange
     cgap:persimmon_leaves: cgap:persimmon
+  # 采收反馈使用原版声音/粒子，避免额外资源包音频依赖。
+  feedback:
+    enabled: true
+    actionbar: true
+    sounds: true
+    particles: true
+    # 失败/冷却提示至少间隔 20 tick，也避免立即覆盖上一次成功提示。
+    failure-interval-ticks: 20
+    success:
+      sound: minecraft:block.grass.break
+      volume: 0.65
+      pitch: 1.1
+      particle: HAPPY_VILLAGER
+      count: 4
+      offset: 0.25
+    bonus:
+      sound: minecraft:entity.player.levelup
+      volume: 0.45
+      pitch: 1.8
+      particle: COMPOSTER
+      count: 6
+      offset: 0.3
+    quality:
+      sound: minecraft:block.amethyst_block.chime
+      volume: 0.55
+      pitch: 1.5
+      particle: ENCHANT
+      count: 8
+      offset: 0.25
+    fruit:
+      sound: minecraft:block.azalea_leaves.break
+      volume: 0.65
+      pitch: 1.0
+      particle: HAPPY_VILLAGER
+      count: 5
+      offset: 0.25
+    failure:
+      sound: minecraft:block.note_block.bass
+      volume: 0.35
+      pitch: 0.7
+      particle: SMOKE
+      count: 0
+      offset: 0
+    cooldown:
+      sound: minecraft:block.note_block.bass
+      volume: 0.25
+      pitch: 0.5
+      particle: ''
+      count: 0
+      offset: 0
+  # 采收统计按玩家、工具、作物持久化到 plugins/MateriaEngine/harvest_stats.db。
+  stats:
+    enabled: true
+    include-creative: false
+    flush-seconds: 30
   tools:
     tea-shears:
       item: cgap:tea_shears
@@ -1438,6 +1501,9 @@ harvest-tools:
       item: cgap:herb_shears
       mode: bonus
       chance: 0.20
+      bonus-amount: 1
+      # 可按作物覆盖概率，例如 cgap:mint_crop: 0.15；其余沿用 chance。
+      target-chances: {}
       targets:
         cgap:jasmine_flower_crop: cgap:fresh_jasmine
         cgap:osmanthus_flower_crop: cgap:fresh_osmanthus
@@ -1449,6 +1515,7 @@ harvest-tools:
       item: cgap:root_spade
       mode: bonus
       chance: 0.25
+      bonus-amount: 1
       targets:
         cgap:ginger_crop: cgap:ginger
         cgap:cassava_crop: cgap:cassava_root

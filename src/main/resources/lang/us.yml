@@ -1,6 +1,26 @@
 command:
   reload-success: "§a[MateriaEngine] Config reloaded."
-  usage-reload: "§eUsage: /materiaengine reload"
+  reload-partial: "§eMachines reloaded; invalid harvest configuration was rejected. Previous harvest settings remain active. See console."
+  usage-reload: "§eUsage: /materiaengine reload or /materiaengine harvest stats [all|player|UUID]"
+
+harvest:
+  feedback:
+    success: "§aHarvested {blocks} §7· §fStored {collected} / Dropped {dropped}"
+    bonus: "§aHarvested {blocks} §7· §eBonus {bonus} §7· §fStored {collected} / Dropped {dropped}"
+    quality: "§aHarvested {blocks} §7· §bUpgraded {quality} §7· §fStored {collected} / Dropped {dropped}"
+    fruit: "§aFruit picked §7· §fStored {collected} / Dropped {dropped}"
+    failure: "§cHarvest prevented: the target is protected, changed or cancelled."
+    immature: "§eThis crop is not mature yet."
+    no-fruit: "§eThese leaves have no ripe fruit."
+    unavailable: "§cHarvesting is temporarily unavailable."
+    cooldown: "§eThe harvesting tool is cooling down."
+  stats:
+    summary: "§6[Harvest Stats] §f{player} §7· {blocks} harvests, {items} items (stored {collected} / dropped {dropped}), {quality} upgraded, {bonus} bonus"
+    row: "§7  {tool} §8/ §f{crop} §7· {blocks} plants, {items} items, quality {quality}, bonus {bonus}"
+    player-not-found: "§cOnline player not found. Use a player name or UUID."
+    item: "§7  Output §f{item} §7· {items} items, upgraded {quality}, bonus {bonus}"
+    disabled: "§eHarvest tracking is paused. Showing existing records."
+    persistence-unavailable: "§cStatistics database could not load. Showing session data only; the existing database will not be overwritten."
 
 storage-title: "Storage"
 

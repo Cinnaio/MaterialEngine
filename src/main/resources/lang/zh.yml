@@ -1,6 +1,26 @@
 command:
   reload-success: "§a[MateriaEngine] 配置已重载。"
-  usage-reload: "§e用法: /materiaengine reload"
+  reload-partial: "§e机器配置已重载；采收配置无效，仍使用上次设置。请查看控制台。"
+  usage-reload: "§e用法: /materiaengine reload 或 /materiaengine harvest stats [all|玩家名|UUID]"
+
+harvest:
+  feedback:
+    success: "§a采收 {blocks} 株 §7· §f入包 {collected} §7/ §f落地 {dropped}"
+    bonus: "§a采收 {blocks} 株 §7· §e额外 {bonus} §7· §f入包 {collected} / 落地 {dropped}"
+    quality: "§a采收 {blocks} 株 §7· §b品质提升 {quality} §7· §f入包 {collected} / 落地 {dropped}"
+    fruit: "§a果实已采下 §7· §f入包 {collected} §7/ §f落地 {dropped}"
+    failure: "§c采收未完成：目标受保护、已改变或被其他插件取消。"
+    immature: "§e作物尚未成熟。"
+    no-fruit: "§e这片树叶尚未结果。"
+    unavailable: "§c采收服务暂不可用。"
+    cooldown: "§e采收工具正在冷却。"
+  stats:
+    summary: "§6[采收统计] §f{player} §7· 采收 {blocks} 株，产出 {items} 件（入包 {collected} / 落地 {dropped}），品质提升 {quality}，额外 {bonus}"
+    row: "§7  {tool} §8/ §f{crop} §7· {blocks} 株，{items} 件，品质 {quality}，额外 {bonus}"
+    player-not-found: "§c找不到在线玩家。请使用玩家名或 UUID。"
+    item: "§7  产物 §f{item} §7· {items} 件，品质提升 {quality}，额外 {bonus}"
+    disabled: "§e采收统计已暂停，以下为已有记录。"
+    persistence-unavailable: "§c统计数据库未能加载，以下仅为本次运行的数据，不会覆盖原数据库。"
 
 storage-title: "物品栏"
 
