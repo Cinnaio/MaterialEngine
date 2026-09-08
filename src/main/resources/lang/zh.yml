@@ -1,9 +1,18 @@
 command:
   reload-success: "§a[MateriaEngine] 配置已重载。"
   reload-partial: "§e机器配置已重载；采收配置无效，仍使用上次设置。请查看控制台。"
-  usage-reload: "§e用法: /materiaengine reload 或 /materiaengine harvest stats [all|玩家名|UUID]"
+  usage-reload: "§e用法: /me reload 或 /me harvest stats|export [all|玩家名|UUID] [all|today|week]"
 
 harvest:
+  period:
+    all: "累计"
+    today: "今日"
+    week: "本周"
+  export:
+    started: "§7正在导出采收统计。"
+    busy: "§e已有采收导出正在进行。"
+    saved: "§a已保存至 plugins/MateriaEngine/exports/{file}"
+    failed: "§c导出失败，请查看控制台。"
   feedback:
     replant: " §7· §a续种 {replanted} §7/ §e缺种 {missing}"
     overflow: " §7· §e背包溢出 {overflow}"
@@ -17,7 +26,8 @@ harvest:
     unavailable: "§c采收服务暂不可用。"
     cooldown: "§e采收工具正在冷却。"
   stats:
-    summary: "§6[采收统计] §f{player} §7· 采收 {blocks} 株，产出 {items} 件（入包 {collected} / 落地 {dropped}），品质提升 {quality}，额外 {bonus}"
+    invalid-period: "§c时间范围应为 all、today 或 week。"
+    summary: "§6[采收统计·{period}] §f{player} §7· 采收 {blocks} 株，产出 {items} 件（入包 {collected} / 落地 {dropped}），品质提升 {quality}，额外 {bonus}"
     row: "§7  {tool} §8/ §f{crop} §7· {blocks} 株，{items} 件，品质 {quality}，额外 {bonus}"
     player-not-found: "§c找不到在线玩家。请使用玩家名或 UUID。"
     item: "§7  产物 §f{item} §7· {items} 件，品质提升 {quality}，额外 {bonus}"

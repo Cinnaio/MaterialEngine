@@ -4,6 +4,7 @@ import com.github.cinnaio.materiaengine.command.ReloadCommand;
 import com.github.cinnaio.materiaengine.config.HarvestToolsConfig;
 import com.github.cinnaio.materiaengine.feature.HarvestToolsFeature;
 import com.github.cinnaio.materiaengine.feature.HarvestStats;
+import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -44,7 +45,8 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove", storageExtractionTracker));
         this.harvestTools = new HarvestToolsFeature(this, craftEngineHook, beaconEngineBridge, lang, harvestStats);
         getServer().getPluginManager().registerEvents(harvestTools, this);
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang, harvestStats));
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang,
+                harvestStats, new HarvestReportExporter(this, harvestStats, lang)));
 
         getLogger().info("MateriaEngine enabled.");
     }

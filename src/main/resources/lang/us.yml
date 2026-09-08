@@ -1,9 +1,18 @@
 command:
   reload-success: "§a[MateriaEngine] Config reloaded."
   reload-partial: "§eMachines reloaded; invalid harvest configuration was rejected. Previous harvest settings remain active. See console."
-  usage-reload: "§eUsage: /materiaengine reload or /materiaengine harvest stats [all|player|UUID]"
+  usage-reload: "§eUsage: /me reload or /me harvest stats|export [all|player|UUID] [all|today|week]"
 
 harvest:
+  period:
+    all: "Lifetime"
+    today: "Today"
+    week: "This week"
+  export:
+    started: "§7Exporting harvest statistics."
+    busy: "§eA harvest export is already in progress."
+    saved: "§aSaved to plugins/MateriaEngine/exports/{file}"
+    failed: "§cExport failed. See console."
   feedback:
     replant: " §7· §aReplanted {replanted} §7/ §eMissing seeds {missing}"
     overflow: " §7· §eInventory overflow {overflow}"
@@ -17,7 +26,8 @@ harvest:
     unavailable: "§cHarvesting is temporarily unavailable."
     cooldown: "§eThe harvesting tool is cooling down."
   stats:
-    summary: "§6[Harvest Stats] §f{player} §7· {blocks} harvests, {items} items (stored {collected} / dropped {dropped}), {quality} upgraded, {bonus} bonus"
+    invalid-period: "§cThe period must be all, today or week."
+    summary: "§6[Harvest Stats: {period}] §f{player} §7· {blocks} harvests, {items} items (stored {collected} / dropped {dropped}), {quality} upgraded, {bonus} bonus"
     row: "§7  {tool} §8/ §f{crop} §7· {blocks} plants, {items} items, quality {quality}, bonus {bonus}"
     player-not-found: "§cOnline player not found. Use a player name or UUID."
     item: "§7  Output §f{item} §7· {items} items, upgraded {quality}, bonus {bonus}"

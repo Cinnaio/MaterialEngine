@@ -11,6 +11,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.DriverManager;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -140,5 +143,89 @@ class HarvestStatsTest {
         mint(stats);
         stats.shutdown();
         assertArrayEquals(original, Files.readAllBytes(file));
+    }
+
+    private HarvestStats at(String instant) {
+        return new HarvestStats(plugin, new Stats(true, false, 30), Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
+    }
+
+    @Test
+    void dailyAndMondayWeekBoundariesUseConfiguredTimezoneAcrossRestarts() {
+        HarvestStats sunday = at("2026-09-06T15:59:59Z");
+        mint(sunday);
+        sunday.shutdown();
+        HarvestStats monday = at("2026-09-06T16:00:00Z");
+        assertEquals(0, monday.summary(playerId, HarvestPeriod.TODAY).harvests());
+        assertEquals(0, monday.summary(playerId, HarvestPeriod.WEEK).harvests());
+        mint(monday);
+        monday.shutdown();
+        HarvestStats tuesday = at("2026-09-08T02:00:00Z");
+        mint(tuesday);
+        assertEquals(3, tuesday.summary(playerId).harvests());
+        assertEquals(1, tuesday.summary(playerId, HarvestPeriod.TODAY).harvests());
+        assertEquals(2, tuesday.summary(playerId, HarvestPeriod.WEEK).harvests());
+        assertEquals(8, tuesday.items(playerId, 5, HarvestPeriod.WEEK).getFirst().output().items());
+        assertEquals(1, tuesday.breakdown(playerId, 5, HarvestPeriod.TODAY).getFirst().totals().harvests());
+        tuesday.shutdown();
+    }
+
+    @Test
+    void existingTotalsAreNotBackfilledIntoDailyTables() throws Exception {
+        HarvestStats existing = open();
+        mint(existing);
+        existing.shutdown();
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("harvest_stats.db"));
+             var statement = connection.createStatement()) {
+            statement.execute("DROP TABLE harvest_daily_stats");
+            statement.execute("DROP TABLE harvest_daily_outputs");
+        }
+        HarvestStats migrated = open();
+        assertEquals(1, migrated.summary(playerId).harvests());
+        assertEquals(0, migrated.summary(playerId, HarvestPeriod.TODAY).harvests());
+        mint(migrated);
+        assertEquals(2, migrated.summary(playerId).harvests());
+        assertEquals(1, migrated.summary(playerId, HarvestPeriod.TODAY).harvests());
+        migrated.shutdown();
+    }
+
+    @Test
+    void dailyWriteFailureRollsBackLifetimeAndCanRetry() throws Exception {
+        HarvestStats stats = open();
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("harvest_stats.db"));
+             var statement = connection.createStatement()) {
+            statement.execute("CREATE TRIGGER fail_daily BEFORE INSERT ON harvest_daily_outputs BEGIN SELECT RAISE(FAIL, 'test'); END");
+            mint(stats);
+            assertFalse(stats.flush());
+            try (var rows = statement.executeQuery("SELECT COUNT(*) FROM harvest_stats")) {
+                assertTrue(rows.next());
+                assertEquals(0, rows.getInt(1));
+            }
+            statement.execute("DROP TRIGGER fail_daily");
+        }
+        assertTrue(stats.flush());
+        stats.shutdown();
+        HarvestStats reloaded = open();
+        assertEquals(1, reloaded.summary(playerId).harvests());
+        assertEquals(1, reloaded.summary(playerId, HarvestPeriod.TODAY).harvests());
+        reloaded.shutdown();
+    }
+
+    @Test
+    void csvIncludesScopedRowsAndQuotesDelimitersWithoutSpreadsheetFormulas() throws Exception {
+        HarvestStats stats = at("2026-09-08T02:00:00Z");
+        stats.record(player, "tool,\"name", "cgap:mint_crop", Map.of("=danger", new HarvestStats.Output(1, 0, 0, 0)));
+        Player other = mock(Player.class);
+        when(other.getUniqueId()).thenReturn(UUID.randomUUID());
+        stats.record(other, "other-tool", "cgap:mint_crop", Map.of("cgap:fresh_mint", new HarvestStats.Output(2, 0, 0, 0)));
+        Path file = stats.exportCsv(playerId, HarvestPeriod.TODAY);
+        String csv = Files.readString(file);
+        assertTrue(csv.startsWith("\uFEFFdate,player_uuid"));
+        assertTrue(csv.contains("\"2026-09-08\""));
+        assertTrue(csv.contains("\"tool,\"\"name\""));
+        assertTrue(csv.contains("\"'=danger\""));
+        assertFalse(csv.contains("other-tool"));
+        assertEquals(3, csv.lines().count());
+        assertTrue(file.startsWith(directory.resolve("exports")));
+        stats.shutdown();
     }
 }

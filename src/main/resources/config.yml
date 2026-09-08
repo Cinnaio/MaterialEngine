@@ -1482,6 +1482,8 @@ harvest-tools:
     enabled: true
     include-creative: false
     flush-seconds: 30
+    # 日统计按此时区划分，本周从周一开始；旧版本累计数据不补记到某一天。
+    timezone: Asia/Shanghai
   tools:
     tea-shears:
       item: cgap:tea_shears

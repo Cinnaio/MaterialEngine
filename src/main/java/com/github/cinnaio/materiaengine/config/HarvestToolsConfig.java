@@ -114,12 +114,22 @@ public record HarvestToolsConfig(String sickleItem, int radius, Map<String, Crop
         }
     }
 
-    public record Stats(boolean enabled, boolean includeCreative, int flushSeconds) {
+    public record Stats(boolean enabled, boolean includeCreative, int flushSeconds, java.time.ZoneId timezone) {
+        public Stats(boolean enabled, boolean includeCreative, int flushSeconds) {
+            this(enabled, includeCreative, flushSeconds, java.time.ZoneId.of("Asia/Shanghai"));
+        }
+
         static Stats load(ConfigurationSection root) {
             ConfigurationSection section = root.getConfigurationSection("harvest-tools.stats");
             if (section == null) return new Stats(true, false, 30);
             return new Stats(section.getBoolean("enabled", true), section.getBoolean("include-creative", false),
-                    Math.clamp(section.getInt("flush-seconds", 30), 5, 3600));
+                    Math.clamp(section.getInt("flush-seconds", 30), 5, 3600),
+                    timezone(section.getString("timezone", "Asia/Shanghai")));
+        }
+
+        private static java.time.ZoneId timezone(String name) {
+            try { return java.time.ZoneId.of(name); }
+            catch (java.time.DateTimeException error) { throw new IllegalArgumentException("Invalid harvest statistics timezone: " + name, error); }
         }
     }
 

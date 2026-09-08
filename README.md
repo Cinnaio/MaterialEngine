@@ -132,6 +132,20 @@ machines:
 
 数据库只在启动时加载，采收路径更新内存；Paper/Folia 异步定时器以事务批量保存变更行，写入失败后保留待写记录供下个周期重试，正常停服保存最后一批。强制终止进程可能丢失尚未保存的数据，最多约一个保存周期。数据库加载失败会明确记录错误并阻止覆盖已有文件，需要修复原因后重启。自动化测试覆盖 SQLite 重开、重复写入、并发更新、事务回滚与重试；声音、粒子和保护插件的真实客户端表现仍需服务端验收。
 
+### 日周统计与导出（2.3.0-SNAPSHOT）
+
+`harvest-tools.stats.timezone` 默认 `Asia/Shanghai`，今日按当地零点划分，本周从周一开始。累计与每日记录在同一个 SQLite 事务内保存，新增 `harvest_daily_stats` 和 `harvest_daily_outputs` 两张表。旧版本的累计统计完整保留，日周统计只从升级后的实际采收开始；修改时区不会重新划分已经保存的日期。
+
+```text
+/me harvest stats today
+/me harvest stats week
+/me harvest stats all today
+/me harvest stats <在线玩家名或UUID> week
+/me harvest export [all|在线玩家名|UUID] [all|today|week]
+```
+
+CSV 异步保存到 `plugins/MateriaEngine/exports/`，采用带 BOM 的 UTF-8 编码并正确转义逗号、引号及公式前缀。`record_type=harvest` 是工具/作物的采收汇总，`record_type=output` 是具体产物明细，汇总行与明细行应分别筛选后求和；累计导出的 `date` 为空，日周导出带实际记录日期。一次只运行一个导出，导出不会清零或修改统计。
+
 ## 关键类
 
 ```text

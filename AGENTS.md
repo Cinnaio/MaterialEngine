@@ -8,7 +8,7 @@ MateriaEngine 是 Paper/Folia 26.1.x 插件，主分支使用 Java 25；旧版 1
 - CraftEngine 负责：物品、方块、模型、贴图、GUI 字体图标。
 - 当前 CraftEngine API 版本锁定为 `26.8`。
 - 当前配套 CGAP-RESOURCE 资源版本：`0.18.46`（保留 `cgap:lemon` 与紫砂壶 `max-damage: 8`，新增五种采收工具）。
-- 当前插件版本：`2.2.1-SNAPSHOT`，包含合并采收反馈、续种/缺种/满包提示、工具/作物参数覆盖与 SQLite 采收统计；配套资源仍为 `0.18.46`。
+- 当前插件版本：`2.3.0-SNAPSHOT`，包含采收反馈、参数覆盖、SQLite 累计/日周统计与 CSV 导出；配套资源仍为 `0.18.46`。
 
 ## 开发规则
 
