@@ -6,6 +6,16 @@ command:
   usage-reload: "§eUsage: /me harvest [menu|stats|export] [all|player|UUID] [all|today|week]; admin reload: /me reload"
 
 harvest:
+  pouch:
+    title: "Indigo Seed Pouch"
+    missing: "§eNo seed pouch in your inventory or offhand."
+    disabled: "§eSeed pouches are disabled. Existing contents are preserved."
+    unavailable: "§cThe pouch moved, is stacked or could not be read. Open it again."
+    inventory-full: "§eInventory space is insufficient. Remaining seeds stay in the pouch."
+    capacity: "§7Capacity {slots} slots · Seeds {count}"
+    deposit: "Store inventory seeds"
+    withdraw: "Withdraw all seeds"
+    close: "Close"
   menu:
     title: "Harvest Journal"
     empty: "No harvests recorded"

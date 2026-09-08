@@ -6,6 +6,7 @@ import com.github.cinnaio.materiaengine.feature.HarvestPeriod;
 import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
 import com.github.cinnaio.materiaengine.feature.HarvestMenu;
 import com.github.cinnaio.materiaengine.feature.HarvestAccess;
+import com.github.cinnaio.materiaengine.feature.SeedPouch;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -29,10 +30,11 @@ public final class ReloadCommand implements BasicCommand {
     private final HarvestStats stats;
     private final HarvestReportExporter exporter;
     private final HarvestMenu menu;
+    private final SeedPouch pouch;
 
     public ReloadCommand(TeaTableGui teaTableGui, List<SimpleProcessingMachineGui> processingMachines,
                          HarvestToolsFeature harvestTools, MateriaEngineLang lang, HarvestStats stats,
-                         HarvestReportExporter exporter, HarvestMenu menu) {
+                         HarvestReportExporter exporter, HarvestMenu menu, SeedPouch pouch) {
         this.teaTableGui = teaTableGui;
         this.processingMachines = processingMachines;
         this.harvestTools = harvestTools;
@@ -40,11 +42,18 @@ public final class ReloadCommand implements BasicCommand {
         this.stats = stats;
         this.exporter = exporter;
         this.menu = menu;
+        this.pouch = pouch;
     }
 
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         CommandSender sender = source.getSender();
+        if (args.length == 2 && args[0].equalsIgnoreCase("harvest") && args[1].equalsIgnoreCase("pouch")) {
+            if (sender instanceof Player player) {
+                if (allowed(sender, HarvestAccess.read(sender, player.getUniqueId()))) pouch.openFirst(player);
+            } else sender.sendMessage(lang.text(sender, "command.player-only"));
+            return;
+        }
         if (args.length == 0 || args[0].equalsIgnoreCase("harvest") && (args.length == 1
                 || args[1].equalsIgnoreCase("menu") && args.length <= 3)) {
             if (!(sender instanceof Player player)) {
@@ -98,7 +107,7 @@ public final class ReloadCommand implements BasicCommand {
         boolean others = HarvestAccess.others(source.getSender());
         if (args.length <= 1) return admin ? List.of("reload", "harvest") : List.of("harvest");
         if (!args[0].equalsIgnoreCase("harvest")) return List.of();
-        if (args.length == 2) return admin ? List.of("menu", "stats", "export") : List.of("menu", "stats");
+        if (args.length == 2) return admin ? List.of("menu", "stats", "pouch", "export") : List.of("menu", "stats", "pouch");
         if (args[1].equalsIgnoreCase("export") && !admin) return List.of();
         if (args.length == 4 && !args[1].equalsIgnoreCase("menu")) return List.of("all", "today", "week");
         if (args.length == 3 && (args[1].equalsIgnoreCase("stats") || args[1].equalsIgnoreCase("export") || args[1].equalsIgnoreCase("menu"))) {

@@ -7,6 +7,7 @@ import com.github.cinnaio.materiaengine.feature.HarvestStats;
 import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
 import com.github.cinnaio.materiaengine.feature.HarvestMenu;
 import com.github.cinnaio.materiaengine.feature.HarvestMenuItems;
+import com.github.cinnaio.materiaengine.feature.SeedPouch;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -25,6 +26,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
     private HarvestToolsFeature harvestTools;
     private HarvestStats harvestStats;
     private HarvestMenu harvestMenu;
+    private SeedPouch seedPouch;
     private StorageExtractionTracker storageExtractionTracker;
 
     @Override
@@ -47,11 +49,14 @@ public final class MateriaEnginePlugin extends JavaPlugin {
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove", storageExtractionTracker));
         this.harvestTools = new HarvestToolsFeature(this, craftEngineHook, beaconEngineBridge, lang, harvestStats);
+        this.seedPouch = new SeedPouch(this, craftEngineHook, lang, new HarvestMenuItems(craftEngineHook), harvestTools::settings);
+        harvestTools.setSeedPouch(seedPouch);
+        getServer().getPluginManager().registerEvents(seedPouch, this);
         getServer().getPluginManager().registerEvents(harvestTools, this);
         this.harvestMenu = new HarvestMenu(this, harvestStats, lang, new HarvestMenuItems(craftEngineHook), harvestTools::settings);
         getServer().getPluginManager().registerEvents(harvestMenu, this);
         registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang,
-                harvestStats, new HarvestReportExporter(this, harvestStats, lang), harvestMenu));
+                harvestStats, new HarvestReportExporter(this, harvestStats, lang), harvestMenu, seedPouch));
 
         getLogger().info("MateriaEngine enabled.");
     }
@@ -72,6 +77,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
         }
         if (harvestTools != null) harvestTools.shutdown();
         if (harvestMenu != null) harvestMenu.shutdown();
+        if (seedPouch != null) seedPouch.shutdown();
         if (harvestStats != null) harvestStats.shutdown();
         getServer().getScheduler().cancelTasks(this);
         getLogger().info("MateriaEngine disabled.");

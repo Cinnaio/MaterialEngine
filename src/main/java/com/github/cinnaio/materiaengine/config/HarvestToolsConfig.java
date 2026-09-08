@@ -14,10 +14,18 @@ public record HarvestToolsConfig(String sickleItem, int radius, Map<String, Crop
                                  String basketItem, Map<String, Tool> tools,
                                  Map<String, String> fruits, long regrowSeconds,
                                  int sickleCooldownTicks, int sickleDurabilityCost,
-                                 Feedback feedback, Stats stats, Map<String, Long> regrowOverrides) {
+                                 Feedback feedback, Stats stats, Map<String, Long> regrowOverrides, Pouch pouch) {
     public enum Mode { QUALITY, BONUS, FRUIT }
 
     public record Crop(String seed, int matureAge) { }
+
+    public record Pouch(boolean enabled, String item, int slots) {
+        static Pouch load(ConfigurationSection root) {
+            int slots = Math.clamp(root.getInt("harvest-tools.seed-pouch.slots", 9), 9, 27);
+            return new Pouch(root.getBoolean("harvest-tools.seed-pouch.enabled", true),
+                    root.getString("harvest-tools.seed-pouch.item", "cgap:seed_pouch"), ((slots + 8) / 9) * 9);
+        }
+    }
 
     public long regrowSeconds(String leaf) {
         return regrowOverrides.getOrDefault(leaf, regrowSeconds);
@@ -199,7 +207,7 @@ public record HarvestToolsConfig(String sickleItem, int radius, Map<String, Crop
                 Math.clamp(root.getLong("harvest-tools.regrow-seconds", 1200), 60, 604800),
                 clampInt(root.getInt("sickle.cooldown-ticks", defaultCooldownTicks), 0, 200),
                 clampInt(root.getInt("sickle.durability-cost", defaultDurabilityCost), 0, 100),
-                Feedback.load(root), Stats.load(root), Map.copyOf(regrowOverrides));
+                Feedback.load(root), Stats.load(root), Map.copyOf(regrowOverrides), Pouch.load(root));
     }
 
     private static double finite(double value, double fallback) {

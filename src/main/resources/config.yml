@@ -1411,6 +1411,11 @@ sickle:
 harvest-tools:
   enabled: true
   basket: cgap:harvest_basket
+  seed-pouch:
+    enabled: true
+    item: cgap:seed_pouch
+    # 9/18/27 格，每格按种子原始堆叠上限保存；缩小设置不裁掉已有物品。
+    slots: 9
   # 通用采收动作参数；单个工具可在 tools.<name> 下覆盖。
   cooldown-ticks: 4
   durability-cost: 1

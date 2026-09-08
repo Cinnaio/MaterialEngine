@@ -4,6 +4,7 @@ import com.github.cinnaio.materiaengine.feature.HarvestStats;
 import com.github.cinnaio.materiaengine.feature.HarvestPeriod;
 import com.github.cinnaio.materiaengine.feature.HarvestReportExporter;
 import com.github.cinnaio.materiaengine.feature.HarvestMenu;
+import com.github.cinnaio.materiaengine.feature.SeedPouch;
 import com.github.cinnaio.materiaengine.feature.HarvestToolsFeature;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
@@ -32,11 +33,12 @@ class ReloadCommandTest {
     private final HarvestStats stats = mock(HarvestStats.class);
     private final HarvestReportExporter exporter = mock(HarvestReportExporter.class);
     private final HarvestMenu menu = mock(HarvestMenu.class);
+    private final SeedPouch pouch = mock(SeedPouch.class);
     private final MateriaEngineLang lang = mock(MateriaEngineLang.class);
     private final CommandSourceStack source = mock(CommandSourceStack.class);
     private final Player player = mock(Player.class);
     private final UUID playerId = UUID.randomUUID();
-    private final ReloadCommand command = new ReloadCommand(teaTable, List.of(machine), harvest, lang, stats, exporter, menu);
+    private final ReloadCommand command = new ReloadCommand(teaTable, List.of(machine), harvest, lang, stats, exporter, menu, pouch);
 
     @BeforeEach
     void setup() {

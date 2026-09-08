@@ -6,6 +6,16 @@ command:
   usage-reload: "§e用法: /me harvest [menu|stats|export] [all|玩家名|UUID] [all|today|week]；管理重载: /me reload"
 
 harvest:
+  pouch:
+    title: "青布种子袋"
+    missing: "§e背包或副手中没有种子袋。"
+    disabled: "§e种子袋当前已停用，已有内容仍然保留。"
+    unavailable: "§c种子袋已移动、堆叠或数据无法读取，请重新打开。"
+    inventory-full: "§e背包没有足够空间，未取出的种子仍在袋中。"
+    capacity: "§7容量 {slots} 格 · 种子 {count} 件"
+    deposit: "收纳背包种子"
+    withdraw: "取出全部种子"
+    close: "关闭"
   menu:
     title: "采收手册"
     empty: "暂无采收记录"

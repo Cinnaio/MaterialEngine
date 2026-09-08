@@ -49,6 +49,7 @@ public final class HarvestToolsFeature implements Listener {
     private final BeaconEngineBridge beacon;
     private final MateriaEngineLang lang;
     private final HarvestStats stats;
+    private SeedPouch seedPouch;
     private final Map<UUID, Long> lastFeedback = new ConcurrentHashMap<>();
     private volatile HarvestToolsConfig config;
 
@@ -98,6 +99,8 @@ public final class HarvestToolsFeature implements Listener {
     }
 
     public HarvestToolsConfig settings() { return config; }
+
+    public void setSeedPouch(SeedPouch seedPouch) { this.seedPouch = seedPouch; }
 
     public void shutdown() {
         regrowth.shutdown();
@@ -219,8 +222,8 @@ public final class HarvestToolsFeature implements Listener {
         String id = blockId(block);
         Crop crop = settings.crops().get(id);
         if (!mature(block, crop) || (tool != null && !tool.targets().containsKey(id))) return HarvestResult.empty();
-        int seedSlot = findSeed(player, crop.seed());
-        if (!hook.canHarvest(player, block, seedSlot >= 0)) return HarvestResult.empty();
+        SeedSource seed = findSeed(player, crop.seed());
+        if (!hook.canHarvest(player, block, seed != null)) return HarvestResult.empty();
         boolean custom = !id.startsWith("minecraft:");
         List<ItemStack> drops;
         if (custom) {
@@ -237,10 +240,10 @@ public final class HarvestToolsFeature implements Listener {
         Bukkit.getPluginManager().callEvent(harvesting);
         if (harvesting.isCancelled() || !id.equals(blockId(block)) || !mature(block, crop)) return HarvestResult.empty();
         // Recheck inventory after callbacks. Newly awarded seeds are never used for this replant.
-        seedSlot = findSeed(player, crop.seed());
-        if (seedSlot >= 0 && !hook.canHarvest(player, block, true)) return HarvestResult.empty();
+        seed = findSeed(player, crop.seed());
+        if (seed != null && !hook.canHarvest(player, block, true)) return HarvestResult.empty();
         boolean changed;
-        if (seedSlot >= 0) {
+        if (seed != null) {
             if (custom) changed = hook.setIntState(block, id, "age", 0);
             else {
                 Ageable reset = (Ageable) block.getBlockData();
@@ -248,10 +251,9 @@ public final class HarvestToolsFeature implements Listener {
                 block.setBlockData(reset, false);
                 changed = true;
             }
-            if (changed) {
-                ItemStack seed = player.getInventory().getItem(seedSlot);
-                seed.setAmount(seed.getAmount() - 1);
-                player.getInventory().setItem(seedSlot, seed.getAmount() == 0 ? null : seed);
+            if (changed && !consumeSeed(player, seed)) {
+                plugin.getLogger().warning("Harvest seed source changed during replant; rewards withheld.");
+                return HarvestResult.empty();
             }
         } else if (custom) changed = hook.removeHarvestedBlock(block, player);
         else {
@@ -265,7 +267,7 @@ public final class HarvestToolsFeature implements Listener {
         Delivery delivery = deliver(player, block, harvested, settings.basketItem());
         Map<String, HarvestStats.Output> produced = application.retained(delivery.produced());
         if (stats != null) stats.record(player, toolId, id, produced);
-        return HarvestResult.success(produced, seedSlot >= 0 ? 1 : 0, seedSlot < 0 ? 1 : 0, delivery.overflow());
+        return HarvestResult.success(produced, seed != null ? 1 : 0, seed == null ? 1 : 0, delivery.overflow());
     }
 
     boolean harvestFruit(Player player, ItemStack hand, Block block, HarvestToolsConfig settings) {
@@ -362,13 +364,25 @@ public final class HarvestToolsFeature implements Listener {
         if (id != null) produced.merge(id, new HarvestStats.Output(0, spawned.getAmount(), 0, 0), HarvestStats.Output::add);
     }
 
-    private int findSeed(Player player, String id) {
+    private SeedSource findSeed(Player player, String id) {
         ItemStack[] contents = player.getInventory().getStorageContents();
         for (int i = 0; i < contents.length; i++) {
-            if (id.equals(MachineItems.itemIdOf(hook, contents[i]))) return i;
+            if (id.equals(MachineItems.itemIdOf(hook, contents[i]))) return new SeedSource(id, i, null);
         }
-        return -1;
+        SeedPouch.Seed stored = seedPouch == null ? null : seedPouch.findSeed(player, id);
+        return stored == null ? null : new SeedSource(id, -1, stored);
     }
+
+    private boolean consumeSeed(Player player, SeedSource source) {
+        if (source.pouch() != null) return seedPouch.consume(player, source.pouch());
+        ItemStack seed = player.getInventory().getItem(source.slot());
+        if (!source.id().equals(MachineItems.itemIdOf(hook, seed))) return false;
+        seed.setAmount(seed.getAmount() - 1);
+        player.getInventory().setItem(source.slot(), seed.getAmount() == 0 ? null : seed);
+        return true;
+    }
+
+    private record SeedSource(String id, int slot, SeedPouch.Seed pouch) { }
 
     private String blockId(Block block) {
         String id = hook.getBlockId(block);

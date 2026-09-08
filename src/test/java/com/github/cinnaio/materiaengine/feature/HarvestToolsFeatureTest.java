@@ -207,6 +207,37 @@ class HarvestToolsFeatureTest {
     }
 
     @Test
+    void pouchSeedIsUsedAfterSuccessfulReplantAndLooseSeedsTakePriority() {
+        SeedPouch pouch = mock(SeedPouch.class);
+        var source = new SeedPouch.Seed(5, mock(ItemStack.class), 0);
+        when(pouch.findSeed(player, "cgap:mint_seeds")).thenReturn(source);
+        when(pouch.consume(player, source)).thenReturn(true);
+        feature.setSeedPouch(pouch);
+        assertTrue(feature.harvestCrop(player, hand, block, null, config));
+        verify(pouch).consume(player, source);
+        verify(hook).setIntState(block, "cgap:mint_crop", "age", 0);
+        clearInvocations(pouch);
+        storage[0] = stack("cgap:mint_seeds", 2);
+        assertTrue(feature.harvestCrop(player, hand, block, null, config));
+        assertEquals(1, storage[0].getAmount());
+        verifyNoInteractions(pouch);
+    }
+
+    @Test
+    void pouchSeedIsNotConsumedWhenReplantFailsOrProtectionDeniesIt() {
+        SeedPouch pouch = mock(SeedPouch.class);
+        var source = new SeedPouch.Seed(5, mock(ItemStack.class), 0);
+        when(pouch.findSeed(player, "cgap:mint_seeds")).thenReturn(source);
+        feature.setSeedPouch(pouch);
+        when(hook.setIntState(block, "cgap:mint_crop", "age", 0)).thenReturn(false);
+        assertFalse(feature.harvestCrop(player, hand, block, null, config));
+        when(hook.canHarvest(player, block, true)).thenReturn(false);
+        assertFalse(feature.harvestCrop(player, hand, block, null, config));
+        verify(pouch, never()).consume(any(), any());
+        verify(world, never()).dropItemNaturally(any(), any());
+    }
+
+    @Test
     void qualityKeepsOriginalQuantityAndLeavesSeedsUntouched() {
         ItemStack leaf = stack("cgap:fresh_tea_leaf_old_leaf", 2);
         ItemStack seed = stack("cgap:tea_seeds", 3);
