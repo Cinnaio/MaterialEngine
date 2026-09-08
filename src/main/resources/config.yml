@@ -1379,7 +1379,7 @@ machines:
 # ===== 镰刀：范围收割 + 自动续种 =====
 # 右键成熟作物触发；半径 1 = 3x3。背包有对应种子则原位续种成 age0。
 # 消耗耐久 = 收割数量（受耐久附魔减免）；掉落吃时运附魔。镰刀为 iron_hoe，右键锄地已被插件拦截。
-# mature-age 对齐各作物成熟判定：茶 6 / 茉莉 3 / 水稻 7 / 小麦胡萝卜土豆 7 / 甜菜根地狱疣 3。
+# 每株独立检查成熟、领地权限和耐久；范围上限为半径 2，仅处理已加载且当前区域拥有的方块。
 sickle:
   item: cgap:sickle
   radius: 1
@@ -1387,8 +1387,73 @@ sickle:
     cgap:tea_tree_crop: { seed: cgap:tea_seeds, mature-age: 6 }
     cgap:jasmine_flower_crop: { seed: cgap:jasmine_seeds, mature-age: 3 }
     cgap:xian_rice_plant_crop: { seed: cgap:item_xian_rice_seedling, mature-age: 7 }
+    cgap:xian_rice_seed_crop: { seed: cgap:xian_rice_seeds, mature-age: 3 }
+    cgap:osmanthus_flower_crop: { seed: cgap:osmanthus_seeds, mature-age: 3 }
+    cgap:cassava_crop: { seed: cgap:cassava_cutting, mature-age: 4 }
+    cgap:mint_crop: { seed: cgap:mint_seeds, mature-age: 3 }
+    cgap:chrysanthemum_crop: { seed: cgap:chrysanthemum_seeds, mature-age: 3 }
+    cgap:ginger_crop: { seed: cgap:ginger_rhizome, mature-age: 4 }
+    cgap:mung_bean_crop: { seed: cgap:mung_bean_seeds, mature-age: 3 }
+    cgap:lemongrass_crop: { seed: cgap:lemongrass_seeds, mature-age: 3 }
+    cgap:roselle_crop: { seed: cgap:roselle_seeds, mature-age: 3 }
+    cgap:goji_crop: { seed: cgap:goji_seeds, mature-age: 3 }
+    cgap:lotus_crop: { seed: cgap:lotus_seeds, mature-age: 4 }
     minecraft:wheat: { seed: minecraft:wheat_seeds, mature-age: 7 }
     minecraft:carrots: { seed: minecraft:carrot, mature-age: 7 }
     minecraft:potatoes: { seed: minecraft:potato, mature-age: 7 }
     minecraft:beetroots: { seed: minecraft:beetroot_seeds, mature-age: 3 }
     minecraft:nether_wart: { seed: minecraft:nether_wart, mature-age: 3 }
+
+# 采收增益只处理本次右键采收。原掉落表与时运先结算，再应用一种主工具增益。
+# 背包已有种子时消耗 1 份原位续种；副手采收篓将本次掉落收入背包，溢出仍落地。
+harvest-tools:
+  enabled: true
+  basket: cgap:harvest_basket
+  # 自然生成的树叶采后等待 20 分钟，在原区块内持久化；区块加载时每分钟检查一次。
+  # 离线时间计入等待，未加载区块不会强制加载；已拆除树叶不会重新放置。
+  regrow-seconds: 1200
+  fruits:
+    cgap:peach_leaves: cgap:peach
+    cgap:lemon_leaves: cgap:lemon
+    cgap:jujube_leaves: cgap:jujube
+    cgap:pomelo_leaves: cgap:pomelo
+    cgap:orange_leaves: cgap:orange
+    cgap:persimmon_leaves: cgap:persimmon
+  tools:
+    tea-shears:
+      item: cgap:tea_shears
+      mode: quality
+      targets:
+        cgap:tea_tree_crop: cgap:fresh_tea_leaf
+      # 35% 概率将二叶、三叶或老叶换为高品质鲜叶，数量保持原样；不改种子掉落。
+      chance: 0.35
+      quality-sources:
+        - cgap:fresh_tea_leaf_bud_leaf2
+        - cgap:fresh_tea_leaf_bud_leaf3
+        - cgap:fresh_tea_leaf_old_leaf
+      quality-targets:
+        cgap:fresh_tea_leaf_bud: 1
+        cgap:fresh_tea_leaf_bud_leaf1: 3
+    herb-shears:
+      item: cgap:herb_shears
+      mode: bonus
+      chance: 0.20
+      targets:
+        cgap:jasmine_flower_crop: cgap:fresh_jasmine
+        cgap:osmanthus_flower_crop: cgap:fresh_osmanthus
+        cgap:mint_crop: cgap:fresh_mint
+        cgap:chrysanthemum_crop: cgap:fresh_chrysanthemum
+        cgap:lemongrass_crop: cgap:fresh_lemongrass
+        cgap:roselle_crop: cgap:fresh_roselle
+    root-spade:
+      item: cgap:root_spade
+      mode: bonus
+      chance: 0.25
+      targets:
+        cgap:ginger_crop: cgap:ginger
+        cgap:cassava_crop: cgap:cassava_root
+    fruit-picker:
+      item: cgap:fruit_picker
+      mode: fruit
+      # 从眼睛位置沿视线检查第一个方块，树叶和墙体均不能穿透；每次采一片结果树叶。
+      reach: 5.0

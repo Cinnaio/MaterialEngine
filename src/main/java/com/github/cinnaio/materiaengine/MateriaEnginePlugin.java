@@ -1,7 +1,7 @@
 package com.github.cinnaio.materiaengine;
 
 import com.github.cinnaio.materiaengine.command.ReloadCommand;
-import com.github.cinnaio.materiaengine.feature.SickleHarvestFeature;
+import com.github.cinnaio.materiaengine.feature.HarvestToolsFeature;
 import com.github.cinnaio.materiaengine.feature.SimpleProcessingMachineGui;
 import com.github.cinnaio.materiaengine.feature.TeaTableGui;
 import com.github.cinnaio.materiaengine.i18n.MateriaEngineLang;
@@ -17,7 +17,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
     private TeaTableGui teaTableGui;
     private final List<SimpleProcessingMachineGui> processingMachines = new ArrayList<>();
     private MateriaEngineLang lang;
-    private SickleHarvestFeature sickleHarvest;
+    private HarvestToolsFeature harvestTools;
     private StorageExtractionTracker storageExtractionTracker;
 
     @Override
@@ -37,9 +37,9 @@ public final class MateriaEnginePlugin extends JavaPlugin {
                 "machines.barrel", "tea_barrels", "tea barrel", "barrel", storageExtractionTracker));
         registerProcessingMachine(new SimpleProcessingMachineGui(this, craftEngineHook, lang,
                 "machines.tea-stove", "tea_stoves", "tea stove", "tea-stove", storageExtractionTracker));
-        this.sickleHarvest = new SickleHarvestFeature(this, craftEngineHook);
-        getServer().getPluginManager().registerEvents(sickleHarvest, this);
-        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, sickleHarvest, lang));
+        this.harvestTools = new HarvestToolsFeature(this, craftEngineHook, beaconEngineBridge);
+        getServer().getPluginManager().registerEvents(harvestTools, this);
+        registerCommand("materiaengine", List.of("me"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang));
 
         getLogger().info("MateriaEngine enabled.");
     }
@@ -58,6 +58,7 @@ public final class MateriaEnginePlugin extends JavaPlugin {
         if (storageExtractionTracker != null) {
             storageExtractionTracker.shutdown();
         }
+        if (harvestTools != null) harvestTools.shutdown();
         getServer().getScheduler().cancelTasks(this);
         getLogger().info("MateriaEngine disabled.");
     }

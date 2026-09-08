@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.github.cinnaio'
-version = '2.0.3-SNAPSHOT'
+version = '2.1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -26,6 +26,18 @@ dependencies {
     compileOnly 'io.papermc.paper:paper-api:26.1.2.build.74-stable'
     compileOnly 'net.momirealms:craft-engine-core:26.8'
     compileOnly 'net.momirealms:craft-engine-bukkit:26.8'
+    testImplementation 'io.papermc.paper:paper-api:26.1.2.build.74-stable'
+    testImplementation 'net.momirealms:craft-engine-core:26.8'
+    testImplementation 'net.momirealms:craft-engine-bukkit:26.8'
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.20.0'
+}
+
+test {
+    useJUnitPlatform()
+    systemProperty 'craftengine.runtimeJar', providers.gradleProperty('craftEngineRuntimeJar').getOrElse('')
 }
 
 java {

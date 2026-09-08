@@ -84,6 +84,19 @@ machines:
 | 茶炉 | `cgap:tea_stove` | 需要燃料的简单加工机器，使用专用 GUI。 |
 | 茶桌 | `cgap:tea_table` | GUI 展示入口。 |
 
+## 采收工具
+
+`2.1.0-SNAPSHOT` 对接 CGAP-RESOURCE `0.18.46` 的精制采茶剪、花草采收剪、根茎采掘铲、长柄采果杆与竹编采收篓，并将镰刀覆盖补齐到 14 种自定义作物阶段及 5 种原版作物。
+
+- `sickle` 保留既有物品、半径、种子与成熟阶段配置；`harvest-tools` 配置各工具、奖励概率、茶叶品质转换、六种果树和重新结果时间。旧文件缺失的新字段从随包默认配置合并，已有配置优先；`seed: ''` 可禁用某种作物。
+- 茶剪把较低品质鲜叶以 35% 概率转为单芽或一芽一叶，数量不变；花草剪与根茎铲分别有 20% / 25% 概率额外产出一份对应原料。先结算原掉落表中的时运，再应用一种主工具增益，种子不参与额外奖励。
+- 作物采后若背包已有对应种子则消耗一份原位续种，没有种子则移除；不使用本次新掉落的种子。副手采收篓只收取本次产物，溢出落地；实际入包数量沿用 BeaconEngine 获取统计接口。
+- 采果杆从眼睛位置沿视线定点采果，默认 5 格，遇到第一个方块即停止，不穿墙或树叶。先清除 `fruiting` 再发放一个果实；自然树叶默认 20 分钟后重新结果，计时存储在区块 PDC 中，可跨重启恢复，加载后每分钟检查一次，不强制加载区块。
+- 只处理主手生存/创造模式交互，逐目标检查 CraftEngine 的交互、破坏及续种放置权限，并遵守自定义破坏事件、原版破坏事件和 `PlayerHarvestBlockEvent` 的取消结果。每株扣一次主手耐久，破损后立即停止。采收和射线路径仅访问已加载且当前线程拥有的区域，果实计时使用区域调度器。
+- CraftEngine 对接集中在 `CraftEngineHook`，兼容 `26.8` 的 Builder 掉落上下文和 `26.9-SNAPSHOT` 的 ContextHolder / 破坏事件签名。真实保护插件、客户端射线、物品附魔和果实恢复仍需实机测试；此处区域检查不代表其他现有机器模块已完成 Folia 运行验证。
+
+验证：`./gradlew test build`。指定 `-PcraftEngineRuntimeJar=<服务端 CraftEngine jar>` 可额外核对该 JAR 的采收 API 签名。资源包侧使用 `_tools/validate_teastory_harvest_tools.py --materia-config <本仓库 src/main/resources/config.yml>` 验证工具 ID、种子、成熟阶段、果树、模型、材质、配方与翻译。
+
 ## 关键类
 
 ```text
@@ -101,13 +114,13 @@ src/main/java/com/github/cinnaio/materiaengine/util/CraftEngineHook.java
 CraftEngine 内容包在：
 
 ```text
-E:\Developments\Projects\CGAP-RESOURCE
+E:\Games\Minecraft Server\purpur-1.21.4-2416-server\plugins\CraftEngine\resources
 ```
 
 当前配套资源版本：
 
 ```text
-0.15.0
+0.18.46
 ```
 
 已使用的主要资源：
