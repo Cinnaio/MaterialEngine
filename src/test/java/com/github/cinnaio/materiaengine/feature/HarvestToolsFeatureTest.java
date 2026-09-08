@@ -194,6 +194,8 @@ class HarvestToolsFeatureTest {
         verify(hook).setIntState(block, "cgap:mint_crop", "age", 0);
         verify(player).damageItemStack(EquipmentSlot.HAND, 1);
         verify(world, times(3)).dropItemNaturally(any(), any());
+        verify(player).sendActionBar(contains("Replanted 1"));
+        verify(player).sendActionBar(contains("Missing seeds 0"));
     }
 
     @Test
@@ -331,6 +333,7 @@ class HarvestToolsFeatureTest {
         verify(player, times(9)).damageItemStack(EquipmentSlot.HAND, 1);
         verify(player).setCooldown(hand, 4);
         verify(player).sendActionBar(contains("Harvested 9"));
+        verify(player).sendActionBar(contains("Missing seeds 9"));
         verify(player, times(1)).playSound(any(Location.class), anyString(), any(SoundCategory.class), anyFloat(), anyFloat());
         verify(player).spawnParticle(eq(Particle.HAPPY_VILLAGER), any(Location.class), eq(4), eq(.25), eq(.25), eq(.25), eq(0.0));
         verify(stats, times(9)).record(eq(player), eq("cgap:sickle"), eq("cgap:mint_crop"), anyMap());
@@ -352,6 +355,7 @@ class HarvestToolsFeatureTest {
                 "cgap:mint_seeds", new HarvestStats.Output(1, 0, 0, 0)));
         verify(player).sendActionBar(contains("Bonus 1"));
         verify(player).sendActionBar(contains("Stored 3 / Dropped 2"));
+        verify(player).sendActionBar(contains("Inventory overflow 2"));
         verify(beacon, times(2)).recordItemObtained(player, "cgap:fresh_mint", 1);
     }
 

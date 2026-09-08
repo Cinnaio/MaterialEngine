@@ -5,6 +5,8 @@ command:
 
 harvest:
   feedback:
+    replant: " §7· §aReplanted {replanted} §7/ §eMissing seeds {missing}"
+    overflow: " §7· §eInventory overflow {overflow}"
     success: "§aHarvested {blocks} §7· §fStored {collected} / Dropped {dropped}"
     bonus: "§aHarvested {blocks} §7· §eBonus {bonus} §7· §fStored {collected} / Dropped {dropped}"
     quality: "§aHarvested {blocks} §7· §bUpgraded {quality} §7· §fStored {collected} / Dropped {dropped}"

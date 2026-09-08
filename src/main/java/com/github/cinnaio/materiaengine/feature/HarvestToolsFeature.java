@@ -260,9 +260,10 @@ public final class HarvestToolsFeature implements Listener {
         List<ItemStack> harvested = harvesting.getItemsHarvested();
         String toolId = hook.getItemId(hand);
         if (toolId == null || toolId.isBlank()) toolId = settings.sickleItem();
-        Map<String, HarvestStats.Output> produced = application.retained(deliver(player, block, harvested, settings.basketItem()));
+        Delivery delivery = deliver(player, block, harvested, settings.basketItem());
+        Map<String, HarvestStats.Output> produced = application.retained(delivery.produced());
         if (stats != null) stats.record(player, toolId, id, produced);
-        return HarvestResult.success(produced);
+        return HarvestResult.success(produced, seedSlot >= 0 ? 1 : 0, seedSlot < 0 ? 1 : 0, delivery.overflow());
     }
 
     boolean harvestFruit(Player player, ItemStack hand, Block block, HarvestToolsConfig settings) {
@@ -286,9 +287,10 @@ public final class HarvestToolsFeature implements Listener {
         List<ItemStack> harvested = event.getItemsHarvested();
         String toolId = hook.getItemId(hand);
         if (toolId == null || toolId.isBlank()) toolId = "unknown";
-        Map<String, HarvestStats.Output> produced = deliver(player, block, harvested, settings.basketItem());
+        Delivery delivery = deliver(player, block, harvested, settings.basketItem());
+        Map<String, HarvestStats.Output> produced = delivery.produced();
         if (stats != null) stats.record(player, toolId, id, produced);
-        return HarvestResult.success(produced);
+        return HarvestResult.success(produced, 0, 0, delivery.overflow());
     }
 
     BonusApplication applyBonus(List<ItemStack> drops, String crop, Tool tool) {
@@ -328,8 +330,9 @@ public final class HarvestToolsFeature implements Listener {
         return new BonusApplication(baseline, quality, bonus);
     }
 
-    Map<String, HarvestStats.Output> deliver(Player player, Block block, List<ItemStack> drops, String basket) {
+    Delivery deliver(Player player, Block block, List<ItemStack> drops, String basket) {
         Map<String, HarvestStats.Output> produced = new HashMap<>();
+        long overflow = 0;
         boolean collect = !basket.isBlank() && hook.isCustomItem(player.getInventory().getItemInOffHand(), basket);
         for (ItemStack drop : drops) {
             if (!MachineItems.hasItem(drop)) continue;
@@ -338,6 +341,7 @@ public final class HarvestToolsFeature implements Listener {
                 String id = MachineItems.itemIdOf(hook, drop);
                 var leftovers = player.getInventory().addItem(drop).values();
                 int accepted = amount - leftovers.stream().mapToInt(ItemStack::getAmount).sum();
+                overflow += amount - accepted;
                 leftovers.forEach(leftover -> dropOutput(block, leftover, produced));
                 if (accepted > 0 && id != null) {
                     produced.merge(id, new HarvestStats.Output(accepted, 0, 0, 0), HarvestStats.Output::add);
@@ -345,7 +349,7 @@ public final class HarvestToolsFeature implements Listener {
                 }
             } else dropOutput(block, drop, produced);
         }
-        return produced;
+        return new Delivery(produced, overflow);
     }
 
     private void dropOutput(Block block, ItemStack drop, Map<String, HarvestStats.Output> produced) {
@@ -421,12 +425,17 @@ public final class HarvestToolsFeature implements Listener {
         if (feedback.actionbar() && lang != null) {
             String message = lang.text(player, key);
             if (summary != null) {
+                if (summary.replanted() + summary.missingSeeds() > 0) message += lang.text(player, "harvest.feedback.replant");
+                if (summary.overflow() > 0) message += lang.text(player, "harvest.feedback.overflow");
                 message = message.replace("{blocks}", Long.toString(summary.blocks()))
                         .replace("{items}", Long.toString(summary.items()))
                         .replace("{quality}", Long.toString(summary.qualityItems()))
                         .replace("{bonus}", Long.toString(summary.bonusItems()))
                         .replace("{collected}", Long.toString(summary.collectedItems()))
-                        .replace("{dropped}", Long.toString(summary.droppedItems()));
+                        .replace("{dropped}", Long.toString(summary.droppedItems()))
+                        .replace("{replanted}", Long.toString(summary.replanted()))
+                        .replace("{missing}", Long.toString(summary.missingSeeds()))
+                        .replace("{overflow}", Long.toString(summary.overflow()));
             }
             player.sendActionBar(message);
         }
@@ -458,23 +467,27 @@ public final class HarvestToolsFeature implements Listener {
         }
     }
 
-    private record HarvestResult(boolean harvested, HarvestSummary summary) {
-        private static HarvestResult empty() { return new HarvestResult(false, new HarvestSummary(0, 0, 0, 0, 0, 0)); }
+    private record Delivery(Map<String, HarvestStats.Output> produced, long overflow) { }
 
-        private static HarvestResult success(Map<String, HarvestStats.Output> produced) {
-            HarvestSummary summary = new HarvestSummary(1, 0, 0, 0, 0, 0);
+    private record HarvestResult(boolean harvested, HarvestSummary summary) {
+        private static HarvestResult empty() { return new HarvestResult(false, new HarvestSummary(0, 0, 0, 0, 0, 0, 0, 0, 0)); }
+
+        private static HarvestResult success(Map<String, HarvestStats.Output> produced, long replanted, long missing, long overflow) {
+            HarvestSummary summary = new HarvestSummary(1, 0, 0, 0, 0, 0, replanted, missing, overflow);
             for (HarvestStats.Output value : produced.values()) {
-                summary = summary.add(new HarvestSummary(0, value.items(), value.quality(), value.bonus(), value.collected(), value.dropped()));
+                summary = summary.add(new HarvestSummary(0, value.items(), value.quality(), value.bonus(), value.collected(), value.dropped(), 0, 0, 0));
             }
             return new HarvestResult(true, summary);
         }
     }
 
-    private record HarvestSummary(long blocks, long items, long qualityItems, long bonusItems, long collectedItems, long droppedItems) {
+    private record HarvestSummary(long blocks, long items, long qualityItems, long bonusItems, long collectedItems, long droppedItems,
+                                  long replanted, long missingSeeds, long overflow) {
         private HarvestSummary add(HarvestSummary other) {
             return new HarvestSummary(blocks + other.blocks, items + other.items,
                     qualityItems + other.qualityItems, bonusItems + other.bonusItems,
-                    collectedItems + other.collectedItems, droppedItems + other.droppedItems);
+                    collectedItems + other.collectedItems, droppedItems + other.droppedItems,
+                    replanted + other.replanted, missingSeeds + other.missingSeeds, overflow + other.overflow);
         }
     }
 }

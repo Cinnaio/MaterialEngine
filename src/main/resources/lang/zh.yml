@@ -5,6 +5,8 @@ command:
 
 harvest:
   feedback:
+    replant: " §7· §a续种 {replanted} §7/ §e缺种 {missing}"
+    overflow: " §7· §e背包溢出 {overflow}"
     success: "§a采收 {blocks} 株 §7· §f入包 {collected} §7/ §f落地 {dropped}"
     bonus: "§a采收 {blocks} 株 §7· §e额外 {bonus} §7· §f入包 {collected} / 落地 {dropped}"
     quality: "§a采收 {blocks} 株 §7· §b品质提升 {quality} §7· §f入包 {collected} / 落地 {dropped}"
