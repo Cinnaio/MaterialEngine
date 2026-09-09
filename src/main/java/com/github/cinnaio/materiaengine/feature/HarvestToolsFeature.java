@@ -267,6 +267,9 @@ public final class HarvestToolsFeature implements Listener {
         Delivery delivery = deliver(player, block, harvested, settings.basketItem());
         Map<String, HarvestStats.Output> produced = application.retained(delivery.produced());
         if (stats != null) stats.record(player, toolId, id, produced);
+        beacon.recordHarvest(player, toolId, id, 1, outputItems(produced),
+                produced.values().stream().mapToLong(HarvestStats.Output::quality).sum(),
+                produced.values().stream().mapToLong(HarvestStats.Output::bonus).sum(), false);
         return HarvestResult.success(produced, seed != null ? 1 : 0, seed == null ? 1 : 0, delivery.overflow());
     }
 
@@ -294,7 +297,14 @@ public final class HarvestToolsFeature implements Listener {
         Delivery delivery = deliver(player, block, harvested, settings.basketItem());
         Map<String, HarvestStats.Output> produced = delivery.produced();
         if (stats != null) stats.record(player, toolId, id, produced);
+        beacon.recordHarvest(player, toolId, id, 1, outputItems(produced), 0, 0, true);
         return HarvestResult.success(produced, 0, 0, delivery.overflow());
+    }
+
+    private static Map<String, Long> outputItems(Map<String, HarvestStats.Output> produced) {
+        Map<String, Long> result = new HashMap<>();
+        produced.forEach((id, value) -> result.put(id, value.items()));
+        return result;
     }
 
     BonusApplication applyBonus(List<ItemStack> drops, String crop, Tool tool) {

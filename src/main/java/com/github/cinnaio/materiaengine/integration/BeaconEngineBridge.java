@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * Optional bridge to BeaconEngine's service API. MateriaEngine remains
@@ -21,6 +22,7 @@ public final class BeaconEngineBridge {
     private Plugin boundPlugin;
     private Object api;
     private Method recordItemObtained;
+    private Method recordHarvest;
     private boolean lookupFailureLogged;
     private boolean invocationFailureLogged;
 
@@ -53,6 +55,25 @@ public final class BeaconEngineBridge {
         }
     }
 
+    public void recordHarvest(Player player, String toolId, String cropId, long harvests,
+                              Map<String, Long> outputs, long qualityItems, long bonusItems, boolean fruit) {
+        if (player == null || toolId == null || cropId == null || harvests <= 0) return;
+        Plugin beaconEngine = Bukkit.getPluginManager().getPlugin(BEACON_PLUGIN_NAME);
+        if (beaconEngine == null || !beaconEngine.isEnabled()) return;
+        if (this.boundPlugin != beaconEngine) clearBinding();
+        if (!resolve(beaconEngine) || this.recordHarvest == null) return;
+        try {
+            this.recordHarvest.invoke(this.api, player, toolId, cropId, harvests,
+                    outputs == null ? Map.of() : Map.copyOf(outputs), qualityItems, bonusItems, fruit);
+        } catch (InvocationTargetException error) {
+            clearBinding();
+            logInvocationFailure(error.getCause() == null ? error : error.getCause());
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            clearBinding();
+            logInvocationFailure(error);
+        }
+    }
+
     private boolean resolve(Plugin beaconEngine) {
         if (this.boundPlugin == beaconEngine && this.api != null && this.recordItemObtained != null) {
             return true;
@@ -69,9 +90,17 @@ public final class BeaconEngineBridge {
                 return false;
             }
             Method method = apiClass.getMethod("recordItemObtained", Player.class, String.class, long.class);
+            Method harvestMethod;
+            try {
+                harvestMethod = apiClass.getMethod("recordHarvest", Player.class, String.class, String.class, long.class,
+                        Map.class, long.class, long.class, boolean.class);
+            } catch (NoSuchMethodException ignored) {
+                harvestMethod = null;
+            }
             this.boundPlugin = beaconEngine;
             this.api = service;
             this.recordItemObtained = method;
+            this.recordHarvest = harvestMethod;
             return true;
         } catch (ReflectiveOperationException | LinkageError error) {
             logLookupFailure(error);
@@ -83,6 +112,7 @@ public final class BeaconEngineBridge {
         this.boundPlugin = null;
         this.api = null;
         this.recordItemObtained = null;
+        this.recordHarvest = null;
     }
 
     private void logLookupFailure(Throwable error) {
