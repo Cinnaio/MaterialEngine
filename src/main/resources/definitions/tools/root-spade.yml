@@ -1,0 +1,9 @@
+# TeaStory harvest-tool definition: root-spade
+
+item: cgap:root_spade
+mode: bonus
+chance: 0.25
+bonus-amount: 1
+targets:
+  cgap:ginger_crop: cgap:ginger
+  cgap:cassava_crop: cgap:cassava_root

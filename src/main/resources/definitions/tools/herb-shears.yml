@@ -1,0 +1,15 @@
+# TeaStory harvest-tool definition: herb-shears
+
+item: cgap:herb_shears
+mode: bonus
+chance: 0.20
+bonus-amount: 1
+# 可按作物覆盖概率，例如 cgap:mint_crop: 0.15；其余沿用 chance。
+target-chances: {}
+targets:
+  cgap:jasmine_flower_crop: cgap:fresh_jasmine
+  cgap:osmanthus_flower_crop: cgap:fresh_osmanthus
+  cgap:mint_crop: cgap:fresh_mint
+  cgap:chrysanthemum_crop: cgap:fresh_chrysanthemum
+  cgap:lemongrass_crop: cgap:fresh_lemongrass
+  cgap:roselle_crop: cgap:fresh_roselle

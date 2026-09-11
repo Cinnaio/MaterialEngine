@@ -1,14 +1,20 @@
-name: MateriaEngine
+name: TeaStory
 version: '${version}'
-main: com.github.cinnaio.materiaengine.MateriaEnginePlugin
+main: com.github.cinnaio.teastory.TeaStoryPlugin
 api-version: '26.1'
 folia-supported: true
 authors:
   - Cinnaio
-description: Machine logic engine for CraftEngine-backed content.
+description: TeaStory machines and harvest tools for CraftEngine-backed content.
 libraries:
   - org.xerial:sqlite-jdbc:3.46.1.0
 permissions:
+  teastory.admin:
+    default: op
+  teastory.harvest:
+    default: true
+  teastory.harvest.others:
+    default: op
   materiaengine.admin:
     default: op
   materiaengine.harvest:

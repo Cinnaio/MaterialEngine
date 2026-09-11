@@ -1,0 +1,26 @@
+# TeaStory harvest-tool definition: sickle
+
+item: cgap:sickle
+radius: 1
+cooldown-ticks: 4
+durability-cost: 1
+crops:
+  cgap:tea_tree_crop: { seed: cgap:tea_seeds, mature-age: 6 }
+  cgap:jasmine_flower_crop: { seed: cgap:jasmine_seeds, mature-age: 3 }
+  cgap:xian_rice_plant_crop: { seed: cgap:item_xian_rice_seedling, mature-age: 7 }
+  cgap:xian_rice_seed_crop: { seed: cgap:xian_rice_seeds, mature-age: 3 }
+  cgap:osmanthus_flower_crop: { seed: cgap:osmanthus_seeds, mature-age: 3 }
+  cgap:cassava_crop: { seed: cgap:cassava_cutting, mature-age: 4 }
+  cgap:mint_crop: { seed: cgap:mint_seeds, mature-age: 3 }
+  cgap:chrysanthemum_crop: { seed: cgap:chrysanthemum_seeds, mature-age: 3 }
+  cgap:ginger_crop: { seed: cgap:ginger_rhizome, mature-age: 4 }
+  cgap:mung_bean_crop: { seed: cgap:mung_bean_seeds, mature-age: 3 }
+  cgap:lemongrass_crop: { seed: cgap:lemongrass_seeds, mature-age: 3 }
+  cgap:roselle_crop: { seed: cgap:roselle_seeds, mature-age: 3 }
+  cgap:goji_crop: { seed: cgap:goji_seeds, mature-age: 3 }
+  cgap:lotus_crop: { seed: cgap:lotus_seeds, mature-age: 4 }
+  minecraft:wheat: { seed: minecraft:wheat_seeds, mature-age: 7 }
+  minecraft:carrots: { seed: minecraft:carrot, mature-age: 7 }
+  minecraft:potatoes: { seed: minecraft:potato, mature-age: 7 }
+  minecraft:beetroots: { seed: minecraft:beetroot_seeds, mature-age: 3 }
+  minecraft:nether_wart: { seed: minecraft:nether_wart, mature-age: 3 }

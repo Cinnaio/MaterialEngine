@@ -1,0 +1,218 @@
+# TeaStory machine definition: teapan
+
+block:
+  id: cgap:teapan
+  state:
+    property: stage
+    type: int
+    default: 0
+    filled: 1
+    running: 1
+processing:
+  process-ticks: 100
+inventory:
+  input-slot: 12
+  output-slot: 14
+gui:
+  image-token: <image:cgap:tea_drying_pan_gui>
+  title: "<white><shift:-9>{image}<shift:-143>{progress}<shift:-65><reset>{name}"
+  title-update-ticks: 5
+  progress-image-width: 108
+effects:
+  sounds:
+    open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.2 }
+    close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.2 }
+    start: { key: minecraft:item.bone_meal.use, volume: 0.8, pitch: 1.0 }
+    finish: { key: minecraft:block.composter.ready, volume: 0.9, pitch: 1.1 }
+    ambient: { key: minecraft:block.cherry_leaves.step, volume: 0.5, pitch: 0.9, interval: 60 }
+recipes:
+  # --- 萎凋（晴天）：分级鲜叶 -> 同级萎凋叶 ---
+  wither-bud:
+    input:
+      id: cgap:fresh_tea_leaf_bud
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 100
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf_bud
+      amount: 1
+  wither-bud-leaf1:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf1
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 100
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf_bud_leaf1
+      amount: 1
+  wither-bud-leaf2:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf2
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 100
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf_bud_leaf2
+      amount: 1
+  wither-bud-leaf3:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf3
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 100
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf_bud_leaf3
+      amount: 1
+  wither-old-leaf:
+    input:
+      id: cgap:fresh_tea_leaf_old_leaf
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 100
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf_old_leaf
+      amount: 1
+  # --- 淋湿（雨天）：鲜叶失去分级变湿叶 ---
+  soak-bud-rain:
+    input:
+      id: cgap:fresh_tea_leaf_bud
+      amount: 1
+    conditions:
+      weather: rain
+    process-ticks: 60
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf1-rain:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf1
+      amount: 1
+    conditions:
+      weather: rain
+    process-ticks: 60
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf2-rain:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf2
+      amount: 1
+    conditions:
+      weather: rain
+    process-ticks: 60
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf3-rain:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf3
+      amount: 1
+    conditions:
+      weather: rain
+    process-ticks: 60
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-old-leaf-rain:
+    input:
+      id: cgap:fresh_tea_leaf_old_leaf
+      amount: 1
+    conditions:
+      weather: rain
+    process-ticks: 60
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  # --- 淋湿（雷暴，更快淋透）---
+  soak-bud-thunder:
+    input:
+      id: cgap:fresh_tea_leaf_bud
+      amount: 1
+    conditions:
+      weather: thunder
+    process-ticks: 40
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf1-thunder:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf1
+      amount: 1
+    conditions:
+      weather: thunder
+    process-ticks: 40
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf2-thunder:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf2
+      amount: 1
+    conditions:
+      weather: thunder
+    process-ticks: 40
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-bud-leaf3-thunder:
+    input:
+      id: cgap:fresh_tea_leaf_bud_leaf3
+      amount: 1
+    conditions:
+      weather: thunder
+    process-ticks: 40
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  soak-old-leaf-thunder:
+    input:
+      id: cgap:fresh_tea_leaf_old_leaf
+      amount: 1
+    conditions:
+      weather: thunder
+    process-ticks: 40
+    output-state: 2
+    output:
+      id: cgap:wet_tea_leaf
+      amount: 1
+  # --- 挽救：湿叶晴天摊晾成无分级萎凋叶 ---
+  rescue-wet:
+    input:
+      id: cgap:wet_tea_leaf
+      amount: 1
+    conditions:
+      weather: clear
+    process-ticks: 140
+    output-state: 3
+    output:
+      id: cgap:withered_tea_leaf
+      amount: 1
+  # --- 闷黄：绿茶堆闷成黄茶（不看天）---
+  yellowing:
+    input:
+      id: cgap:green_tea_leaf
+      amount: 1
+    process-ticks: 160
+    output-state: 4
+    output:
+      id: cgap:yellow_tea_leaf
+      amount: 1

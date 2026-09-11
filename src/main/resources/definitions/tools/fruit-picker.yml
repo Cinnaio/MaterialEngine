@@ -1,0 +1,13 @@
+# TeaStory harvest-tool definition: fruit-picker
+
+item: cgap:fruit_picker
+mode: fruit
+# 从眼睛位置沿视线检查第一个方块，树叶和墙体均不能穿透；每次采一片结果树叶。
+reach: 5.0
+fruits:
+  cgap:peach_leaves: cgap:peach
+  cgap:lemon_leaves: cgap:lemon
+  cgap:jujube_leaves: cgap:jujube
+  cgap:pomelo_leaves: cgap:pomelo
+  cgap:orange_leaves: cgap:orange
+  cgap:persimmon_leaves: cgap:persimmon

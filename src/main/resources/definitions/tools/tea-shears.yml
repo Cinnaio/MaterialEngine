@@ -1,0 +1,15 @@
+# TeaStory harvest-tool definition: tea-shears
+
+item: cgap:tea_shears
+mode: quality
+targets:
+  cgap:tea_tree_crop: cgap:fresh_tea_leaf
+# 35% 概率将二叶、三叶或老叶换为高品质鲜叶，数量保持原样；不改种子掉落。
+chance: 0.35
+quality-sources:
+  - cgap:fresh_tea_leaf_bud_leaf2
+  - cgap:fresh_tea_leaf_bud_leaf3
+  - cgap:fresh_tea_leaf_old_leaf
+quality-targets:
+  cgap:fresh_tea_leaf_bud: 1
+  cgap:fresh_tea_leaf_bud_leaf1: 3

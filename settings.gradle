@@ -9,4 +9,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'materia-engine-paper-plugin'
+rootProject.name = 'teastory-paper-plugin'

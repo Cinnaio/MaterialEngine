@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-MateriaEngine 是 Paper/Folia 26.1.x 插件（已用 26.1.2 验证），用于承载 TeaStory 风格机器逻辑，并与 CraftEngine 内容包配合使用。
+TeaStory 是 Paper/Folia 26.1.x 插件（已用 26.1.2 验证），用于承载 TeaStory 机器逻辑，并与 CraftEngine 内容包配合使用。Java 包名和主类已统一为 `com.github.cinnaio.teastory` / `TeaStoryPlugin`，旧名称只用于迁移和兼容。
 
 - 插件负责：机器交互、GUI、进度、配方逻辑、数据保存、Folia 安全调度。
 - CraftEngine 负责：物品、方块、模型、贴图、GUI 字体图标。
@@ -33,7 +33,7 @@ MateriaEngine 是 Paper/Folia 26.1.x 插件（已用 26.1.2 验证），用于�
 src/main/resources/config.yml
 ```
 
-机器配置按功能分组：
+`config.yml` 只保存全局运行参数；每个机器/工具定义独立成一个文件，运行时复制到 `plugins/TeaStory/definitions/`：
 
 - `block`：CraftEngine 方块 ID 与方块状态映射。
 - `processing`：机器级默认加工时间。
@@ -41,39 +41,36 @@ src/main/resources/config.yml
 - `gui`：GUI 背景 token、标题布局、进度条配置。
 - `recipes`：配方输入、条件、加工时间、输出。
 
-示例结构：
+机器文件示例（`definitions/machines/tea-stove.yml`）：
 
 ```yaml
-machines:
-  tea-stove:
-    block:
-      id: cgap:tea_stove
-      state:
-        property: lit
-        type: boolean
-        default: 0
-        filled: 0
-        running: 1
-    processing:
-      process-ticks: 200
-    inventory:
-      input-slot: 12
-      fuel-slot: 13
-      output-slot: 14
-    gui:
-      image-token: <image:cgap:tea_stove_gui>
-      title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-94><reset>{name}"
-      title-update-ticks: 5
-      progress-image-width: 5
-      progress-char-start: 59776
-    recipes:
-      broken-to-green:
-        input:
-          id: cgap:broken_tea_leaf
-          amount: 1
-        output:
-          id: cgap:green_tea_leaf
-          amount: 1
+block:
+  id: cgap:tea_stove
+  state:
+    property: lit
+    type: boolean
+    default: 0
+    filled: 0
+    running: 1
+processing:
+  process-ticks: 200
+inventory:
+  input-slot: 12
+  fuel-slot: 13
+  output-slot: 14
+gui:
+  image-token: <image:cgap:tea_stove_gui>
+  title: "<white><shift:-9>{image}<shift:-105>{progress}<shift:-94><reset>{name}"
+  title-update-ticks: 5
+  progress-image-width: 5
+recipes:
+  broken-to-green:
+    input:
+      id: cgap:broken_tea_leaf
+      amount: 1
+    output:
+      id: cgap:green_tea_leaf
+      amount: 1
 ```
 
 配置约定：
@@ -86,7 +83,8 @@ machines:
 - 简单加工机配方支持 `conditions.weather: clear|rain|thunder|any`（按机器所在世界天气匹配）。
 - 物品 id 同时接受 CraftEngine id 与 `minecraft:` 原版 id（输入匹配与输出/返还创建都支持）。
 - GUI 使用 `image-token`，不要回退为 CE 自动分配的 `image-char`。
-- GUI `title` 是布局控制字符串，放在 `config.yml`；`lang/*.yml` 只放可读名称和消息。
+- GUI `title` 是布局控制字符串，放在对应机器定义文件；`lang/*.yml` 只放可读名称和消息。
+- 旧版 `config.yml` 的 `machines`、`sickle`、`harvest-tools.tools` 和果树映射会在首次启动时迁移到 `definitions/`；旧 `plugins/MateriaEngine` 数据会复制到 `plugins/TeaStory`，不会删除旧文件。
 - 方块状态统一使用 `block.state.property/type/default/filled/running`，不保留旧字段 fallback。
 - 茶桌配方输入支持一槽多候选：`inputs.<槽名>.any` 列表，每个候选可带自己的 `consume-replacement`（按实际消耗的物品返还空容器）；`id` 也可写成字符串列表，共享同一个 `consume-replacement`。开水壶候选集用 YAML 锚点 `&boiled_water` 复用（Paper 的 YamlConfiguration 别名数无上限）。
 - 茶桌输入带 `damage: N` 时不扣数量，改为对 Damageable meta 累加 N 耐久；耐久耗尽按候选的 `consume-replacement` 替换（如满壶倒空换空壶、茶筅打断消失）。用于茶筅损耗与壶装倒茶。
@@ -117,16 +115,17 @@ machines:
 ## 关键类
 
 ```text
-src/main/java/com/github/cinnaio/materiaengine/MateriaEnginePlugin.java
-src/main/java/com/github/cinnaio/materiaengine/feature/SimpleProcessingMachineGui.java
-src/main/java/com/github/cinnaio/materiaengine/feature/TeaTableGui.java
-src/main/java/com/github/cinnaio/materiaengine/config/BlockStateConfig.java
-src/main/java/com/github/cinnaio/materiaengine/config/MachineGuiLayout.java
-src/main/java/com/github/cinnaio/materiaengine/config/MachineSounds.java
-src/main/java/com/github/cinnaio/materiaengine/data/MachineDataStore.java
-src/main/java/com/github/cinnaio/materiaengine/data/StoredMachine.java
-src/main/java/com/github/cinnaio/materiaengine/util/CraftEngineHook.java
-src/main/java/com/github/cinnaio/materiaengine/util/MachineItems.java
+src/main/java/com/github/cinnaio/teastory/TeaStoryPlugin.java
+src/main/java/com/github/cinnaio/teastory/config/DefinitionFiles.java
+src/main/java/com/github/cinnaio/teastory/feature/SimpleProcessingMachineGui.java
+src/main/java/com/github/cinnaio/teastory/feature/TeaTableGui.java
+src/main/java/com/github/cinnaio/teastory/config/BlockStateConfig.java
+src/main/java/com/github/cinnaio/teastory/config/MachineGuiLayout.java
+src/main/java/com/github/cinnaio/teastory/config/MachineSounds.java
+src/main/java/com/github/cinnaio/teastory/data/MachineDataStore.java
+src/main/java/com/github/cinnaio/teastory/data/StoredMachine.java
+src/main/java/com/github/cinnaio/teastory/util/CraftEngineHook.java
+src/main/java/com/github/cinnaio/teastory/util/MachineItems.java
 ```
 
 ## CGAP-RESOURCE 配合项
@@ -137,7 +136,7 @@ CraftEngine 内容包在：
 E:\Developments\Projects\CGAP-RESOURCE
 ```
 
-当前已使用（详见 `config.yml`，共 123 个 cgap id + 原版 `minecraft:sugar/milk_bucket/bucket`）：
+当前已使用（详见 `config.yml` 与 `definitions/`，共 123 个 cgap id + 原版 `minecraft:sugar/milk_bucket/bucket`）：
 
 ```text
 机器方块: cgap:tea_drying_pan / teapan / barrel / tea_stove / tea_table

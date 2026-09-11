@@ -1,0 +1,73 @@
+# TeaStory machine definition: tea-stove
+
+block:
+  id: cgap:tea_stove
+  state:
+    property: lit
+    type: boolean
+    default: 0
+    filled: 0
+    running: 1
+processing:
+  process-ticks: 200
+inventory:
+  input-slot: 2
+  fuel-slot: 20
+  output-slot: 15
+gui:
+  image-token: <image:cgap:tea_stove_gui>
+  title: "<white><shift:-9>{image}<shift:-103>{progress}<shift:-53>{fire}<shift:-53><reset>{name}"
+  title-update-ticks: 2
+  progress-image-width: 24
+  progress-char-start: 59776
+  fire-char-start: 59808
+  fire-frames: 4
+effects:
+  sounds:
+    open: { key: minecraft:block.barrel.open, volume: 0.6, pitch: 1.0 }
+    close: { key: minecraft:block.barrel.close, volume: 0.6, pitch: 1.0 }
+    start: { key: minecraft:item.flintandsteel.use, volume: 0.8, pitch: 1.0 }
+    finish: { key: minecraft:block.brewing_stand.brew, volume: 0.9, pitch: 1.0 }
+    ambient: { key: minecraft:block.blast_furnace.fire_crackle, volume: 0.6, pitch: 1.0, interval: 40 }
+    fuel-consume: { key: minecraft:item.flintandsteel.use, volume: 0.6, pitch: 0.8 }
+recipes:
+  # --- 烘焙：发酵叶 -> 成品茶 ---
+  semi-to-oolong:
+    input:
+      id: cgap:semi_fermented_tea_leaf
+      amount: 1
+    output:
+      id: cgap:oolong_tea_leaf
+      amount: 1
+  full-to-black:
+    input:
+      id: cgap:fully_fermented_tea_leaf
+      amount: 1
+    output:
+      id: cgap:black_tea_leaf
+      amount: 1
+  deep-to-puer:
+    input:
+      id: cgap:deep_fermented_tea_leaf
+      amount: 1
+    output:
+      id: cgap:puer_tea_leaf
+      amount: 1
+  # --- 烘青：青叶低温烘干 -> 白茶 ---
+  tea-leaf-to-white:
+    input:
+      id: cgap:tea_leaf
+      amount: 1
+    process-ticks: 160
+    output:
+      id: cgap:white_tea_leaf
+      amount: 1
+  # --- 蒸青：绿茶蒸后碾磨 -> 抹茶 ---
+  green-to-matcha:
+    input:
+      id: cgap:green_tea_leaf
+      amount: 1
+    process-ticks: 160
+    output:
+      id: cgap:matcha_tea_leaf
+      amount: 1

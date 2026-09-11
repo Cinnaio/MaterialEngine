@@ -1,9 +1,9 @@
 command:
   no-permission: "§cYou do not have permission to use this feature."
   player-only: "§eOpen the harvest menu in game. The console can use harvest stats."
-  reload-success: "§a[MateriaEngine] Config reloaded."
-  reload-partial: "§eMachines reloaded; invalid harvest configuration was rejected. Previous harvest settings remain active. See console."
-  usage-reload: "§eUsage: /me harvest [menu|stats|export] [all|player|UUID] [all|today|week]; admin reload: /me reload"
+  reload-success: "§a[TeaStory] Configuration and definitions reloaded."
+  reload-partial: "§eMachine definitions reloaded; invalid harvest configuration was rejected. Previous harvest settings remain active. See console."
+  usage-reload: "§eUsage: /teastory harvest [menu|stats|export] [all|player|UUID] [all|today|week]; admin reload: /teastory reload (also /me)"
 
 harvest:
   pouch:
@@ -69,7 +69,7 @@ harvest:
   export:
     started: "§7Exporting harvest statistics."
     busy: "§eA harvest export is already in progress."
-    saved: "§aSaved to plugins/MateriaEngine/exports/{file}"
+    saved: "§aSaved to plugins/TeaStory/exports/{file}"
     failed: "§cExport failed. See console."
   feedback:
     replant: " §7· §aReplanted {replanted} §7/ §eMissing seeds {missing}"

@@ -1,9 +1,9 @@
 command:
   no-permission: "§c你没有使用此功能的权限。"
   player-only: "§e请在游戏内打开采收面板；控制台可查询 harvest stats。"
-  reload-success: "§a[MateriaEngine] 配置已重载。"
-  reload-partial: "§e机器配置已重载；采收配置无效，仍使用上次设置。请查看控制台。"
-  usage-reload: "§e用法: /me harvest [menu|stats|export] [all|玩家名|UUID] [all|today|week]；管理重载: /me reload"
+  reload-success: "§a[TeaStory] 配置和定义文件已重载。"
+  reload-partial: "§e机器定义已重载；采收配置无效，仍使用上次设置。请查看控制台。"
+  usage-reload: "§e用法: /teastory harvest [menu|stats|export] [all|玩家名|UUID] [all|today|week]；管理重载: /teastory reload（兼容 /me）"
 
 harvest:
   pouch:
@@ -69,7 +69,7 @@ harvest:
   export:
     started: "§7正在导出采收统计。"
     busy: "§e已有采收导出正在进行。"
-    saved: "§a已保存至 plugins/MateriaEngine/exports/{file}"
+    saved: "§a已保存至 plugins/TeaStory/exports/{file}"
     failed: "§c导出失败，请查看控制台。"
   feedback:
     replant: " §7· §a续种 {replanted} §7/ §e缺种 {missing}"
