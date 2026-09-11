@@ -3,7 +3,7 @@ command:
   player-only: "§eOpen the harvest menu in game. The console can use harvest stats."
   reload-success: "§a[TeaStory] Configuration and definitions reloaded."
   reload-partial: "§eMachine definitions reloaded; invalid harvest configuration was rejected. Previous harvest settings remain active. See console."
-  usage-reload: "§eUsage: /teastory harvest [menu|stats|export] [all|player|UUID] [all|today|week]; admin reload: /teastory reload (also /me)"
+  usage-reload: "§eUsage: /teastory harvest [menu|stats|export] [all|player|UUID] [all|today|week]; admin reload: /teastory reload (also /ts)"
 
 harvest:
   pouch:

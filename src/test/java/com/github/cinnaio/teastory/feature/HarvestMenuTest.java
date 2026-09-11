@@ -56,10 +56,13 @@ class HarvestMenuTest {
             });
             menu.open(player, id, "Farmer");
             verify(player).openInventory(inventory);
-            menu.onClick(click(2, ClickType.LEFT));
+            verify(items, atLeastOnce()).create(eq("minecraft:gray_stained_glass_pane"), any(), anyList(), eq(false));
+            verify(items, atLeastOnce()).create(eq("minecraft:chest"), any(), anyList(), eq(false));
+            verify(items, atLeastOnce()).create(eq("minecraft:shears"), any(), anyList(), eq(false));
+            menu.onClick(click(11, ClickType.LEFT));
             clearInvocations(items);
             menu.onClick(click(53, ClickType.LEFT));
-            verify(items).create(eq("cgap:product_36"), any(), anyList(), eq(false));
+            verify(items).create(eq("cgap:product_21"), any(), anyList(), eq(false));
             verify(items, never()).create(eq("cgap:product_0"), any(), anyList(), anyBoolean());
             menu.onClick(click(47, ClickType.LEFT));
             verify(stats).items(id, Integer.MAX_VALUE, HarvestPeriod.TODAY);

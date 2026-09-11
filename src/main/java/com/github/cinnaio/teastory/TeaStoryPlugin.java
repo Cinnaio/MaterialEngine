@@ -60,7 +60,7 @@ public final class TeaStoryPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(harvestTools, this);
         this.harvestMenu = new HarvestMenu(this, harvestStats, lang, new HarvestMenuItems(craftEngineHook), harvestTools::settings);
         getServer().getPluginManager().registerEvents(harvestMenu, this);
-        registerCommand("teastory", List.of("ts", "me", "materiaengine"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang,
+        registerCommand("teastory", List.of("ts"), new ReloadCommand(teaTableGui, processingMachines, harvestTools, lang,
                 harvestStats, new HarvestReportExporter(this, harvestStats, lang), harvestMenu, seedPouch));
 
         getLogger().info("TeaStory enabled.");

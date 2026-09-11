@@ -3,7 +3,7 @@ command:
   player-only: "§e请在游戏内打开采收面板；控制台可查询 harvest stats。"
   reload-success: "§a[TeaStory] 配置和定义文件已重载。"
   reload-partial: "§e机器定义已重载；采收配置无效，仍使用上次设置。请查看控制台。"
-  usage-reload: "§e用法: /teastory harvest [menu|stats|export] [all|玩家名|UUID] [all|today|week]；管理重载: /teastory reload（兼容 /me）"
+  usage-reload: "§e用法: /teastory harvest [menu|stats|export] [all|玩家名|UUID] [all|today|week]；管理重载: /teastory reload（兼容 /ts）"
 
 harvest:
   pouch:

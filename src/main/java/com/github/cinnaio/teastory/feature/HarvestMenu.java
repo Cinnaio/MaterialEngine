@@ -27,7 +27,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public final class HarvestMenu implements Listener {
-    private static final int PAGE_SIZE = 36;
+    private static final int PAGE_SIZE = 21;
+    private static final int[] TAB_SLOTS = {10, 11, 12, 13};
+    private static final int[] CONTENT_SLOTS = {
+            19, 20, 21, 22, 23, 24, 25,
+            28, 29, 30, 31, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
+    };
+    private static final int[] FRAME_SLOTS = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8,
+            9, 17, 18, 26, 27, 35, 36, 44,
+            45, 46, 47, 48, 49, 50, 51, 52, 53
+    };
+    private static final String FRAME_ICON = "minecraft:gray_stained_glass_pane";
+    private static final String HEADER_ICON = "minecraft:light_gray_stained_glass_pane";
     private final JavaPlugin plugin;
     private final HarvestStats stats;
     private final TeaStoryLang lang;
@@ -69,8 +82,9 @@ public final class HarvestMenu implements Listener {
         if (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
         int slot = event.getRawSlot();
         if (slot == 49) { close(player); return; }
-        if (slot == 0 || slot == 2 || slot == 4 || slot == 6) {
-            holder.tab = Tab.values()[slot / 2];
+        int tab = tabIndex(slot);
+        if (tab >= 0) {
+            holder.tab = Tab.values()[tab];
             holder.page = 0;
         } else if (slot >= 46 && slot <= 48) {
             holder.period = HarvestPeriod.values()[slot - 46];
@@ -106,46 +120,63 @@ public final class HarvestMenu implements Listener {
     private void render(Player player, Holder holder) {
         Inventory inventory = holder.inventory;
         inventory.clear();
+        fillFrame(inventory);
         HarvestStats.Summary total = stats.summary(holder.target, holder.period);
         List<Row> rows = rows(player, holder, total);
         holder.pages = Math.max(1, (rows.size() + PAGE_SIZE - 1) / PAGE_SIZE);
         holder.page = Math.clamp(holder.page, 0, holder.pages - 1);
-        String[] icons = {"minecraft:book", "minecraft:wheat", "minecraft:iron_hoe", "minecraft:wheat_seeds"};
+        String[] icons = {"minecraft:book", "minecraft:chest", "minecraft:shears", "minecraft:wheat"};
         for (int i = 0; i < Tab.values().length; i++) {
             Tab tab = Tab.values()[i];
-            inventory.setItem(i * 2, items.create(icons[i], text(player, "tab." + tab.id), List.of(), tab == holder.tab));
+            inventory.setItem(TAB_SLOTS[i], items.create(icons[i], text(player, "tab." + tab.id), List.of(), tab == holder.tab));
         }
         List<Component> state = new ArrayList<>();
         state.add(HarvestMenuItems.text(lang.text(player, "harvest.period." + holder.period.id())));
         if (!stats.enabled()) state.add(HarvestMenuItems.text(lang.text(player, "harvest.stats.disabled")));
         if (!stats.persistenceReady()) state.add(HarvestMenuItems.text(lang.text(player, "harvest.stats.persistence-unavailable")));
-        inventory.setItem(8, items.create("minecraft:player_head", Component.text(holder.name), state, false));
-        if (rows.isEmpty()) inventory.setItem(22, items.create("minecraft:barrier", text(player, "empty"), List.of(), false));
+        inventory.setItem(16, items.create("minecraft:player_head", Component.text(holder.name), state, false));
+        if (rows.isEmpty()) inventory.setItem(31, items.create("minecraft:barrier", text(player, "empty"), List.of(), false));
         for (int i = holder.page * PAGE_SIZE; i < Math.min(rows.size(), (holder.page + 1) * PAGE_SIZE); i++) {
             Row row = rows.get(i);
-            inventory.setItem(9 + i % PAGE_SIZE, items.create(row.icon(), row.name(), row.lore(), false));
+            inventory.setItem(CONTENT_SLOTS[i % PAGE_SIZE], items.create(row.icon(), row.name(), row.lore(), false));
         }
         if (holder.page > 0) button(player, inventory, 45, "minecraft:arrow", "previous");
         if (holder.page + 1 < holder.pages) button(player, inventory, 53, "minecraft:arrow", "next");
         for (HarvestPeriod period : HarvestPeriod.values()) {
-            inventory.setItem(46 + period.ordinal(), items.create(period == HarvestPeriod.ALL ? "minecraft:book"
+            inventory.setItem(46 + period.ordinal(), items.create(period == HarvestPeriod.ALL ? "minecraft:compass"
                             : period == HarvestPeriod.TODAY ? "minecraft:sunflower" : "minecraft:clock",
                     HarvestMenuItems.text(lang.text(player, "harvest.period." + period.id())), List.of(), period == holder.period));
         }
-        button(player, inventory, 49, "minecraft:barrier", "close");
+        button(player, inventory, 49, "minecraft:oak_door", "close");
         button(player, inventory, 50, "minecraft:compass", "refresh");
-        inventory.setItem(51, items.create("minecraft:paper", HarvestMenuItems.text(lang.text(player, "harvest.menu.page")
+        inventory.setItem(51, items.create("minecraft:map", HarvestMenuItems.text(lang.text(player, "harvest.menu.page")
                 .replace("{page}", Integer.toString(holder.page + 1)).replace("{pages}", Integer.toString(holder.pages))), List.of(), false));
+    }
+
+    private void fillFrame(Inventory inventory) {
+        for (int slot : FRAME_SLOTS) {
+            inventory.setItem(slot, items.create(FRAME_ICON, Component.text(" "), List.of(), false));
+        }
+        for (int slot = 10; slot <= 16; slot++) {
+            inventory.setItem(slot, items.create(HEADER_ICON, Component.text(" "), List.of(), false));
+        }
+    }
+
+    private int tabIndex(int slot) {
+        for (int i = 0; i < TAB_SLOTS.length; i++) {
+            if (TAB_SLOTS[i] == slot) return i;
+        }
+        return -1;
     }
 
     private List<Row> rows(Player player, Holder holder, HarvestStats.Summary total) {
         if (holder.tab == Tab.OVERVIEW) {
-            return List.of(metric(player, "minecraft:wheat_seeds", "harvests", total.harvests()),
+            return List.of(metric(player, "minecraft:iron_hoe", "harvests", total.harvests()),
                     metric(player, "minecraft:wheat", "items", total.items()),
                     metric(player, "minecraft:chest", "collected", total.collectedItems()),
                     metric(player, "minecraft:hopper", "dropped", total.droppedItems()),
-                    metric(player, "minecraft:diamond", "quality", total.qualityItems()),
-                    metric(player, "minecraft:gold_nugget", "bonus", total.bonusItems()));
+                    metric(player, "minecraft:amethyst_shard", "quality", total.qualityItems()),
+                    metric(player, "minecraft:gold_ingot", "bonus", total.bonusItems()));
         }
         if (holder.tab == Tab.PRODUCTS) {
             return stats.items(holder.target, Integer.MAX_VALUE, holder.period).stream().map(row -> new Row(row.item(), items.name(row.item()),

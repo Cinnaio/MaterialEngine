@@ -112,7 +112,7 @@ recipes:
 
 沿用 CGAP-RESOURCE `0.18.46`，无需添加声音文件或更新工具模型。成功采收在目标位置向操作者播放声音和粒子，ActionBar 显示采收株数、直接入包和落地数量；品质提升、额外产量和采果使用各自的反馈。一次范围收割只汇总反馈一次，未成熟、未结果、服务不可用、取消或保护阻止时显示对应提示，失败与冷却提示默认至少间隔 20 tick。工具仍拦截原版锄地/铲路行为，同时允许箱子及机器等无关方块的正常交互。
 
-全局参数放在 `config.yml`，机器和工具定义放在各自的 `definitions/` 文件中，通过 `/teastory reload`（兼容 `/ts`、`/me`）重载；缺少的新字段自动继承随包默认值，已有自定义语言文件也继承新增消息。无效粒子配置会拒绝整份采收设置并保留上次有效值，命令明确报告采收配置未生效。
+全局参数放在 `config.yml`，机器和工具定义放在各自的 `definitions/` 文件中，通过 `/teastory reload`（兼容 `/ts`）重载；缺少的新字段自动继承随包默认值，已有自定义语言文件也继承新增消息。无效粒子配置会拒绝整份采收设置并保留上次有效值，命令明确报告采收配置未生效。
 
 | 配置路径 | 默认值与边界 |
 | --- | --- |
@@ -146,24 +146,24 @@ recipes:
 `harvest-tools.stats.timezone` 默认 `Asia/Shanghai`，今日按当地零点划分，本周从周一开始。累计与每日记录在同一个 SQLite 事务内保存，新增 `harvest_daily_stats` 和 `harvest_daily_outputs` 两张表。旧版本的累计统计完整保留，日周统计只从升级后的实际采收开始；修改时区不会重新划分已经保存的日期。
 
 ```text
-/me harvest stats today
-/me harvest stats week
-/me harvest stats all today
-/me harvest stats <在线玩家名或UUID> week
-/me harvest export [all|在线玩家名|UUID] [all|today|week]
+/teastory harvest stats today
+/teastory harvest stats week
+/teastory harvest stats all today
+/teastory harvest stats <在线玩家名或UUID> week
+/teastory harvest export [all|在线玩家名|UUID] [all|today|week]
 ```
 
 CSV 异步保存到 `plugins/TeaStory/exports/`，采用带 BOM 的 UTF-8 编码并正确转义逗号、引号及公式前缀。`record_type=harvest` 是工具/作物的采收汇总，`record_type=output` 是具体产物明细，汇总行与明细行应分别筛选后求和；累计导出的 `date` 为空，日周导出带实际记录日期。一次只运行一个导出，导出不会清零或修改统计。
 
 ### 玩家采收面板（2.4.0-SNAPSHOT）
 
-玩家使用 `/me`、`/me harvest` 或 `/me harvest menu` 打开采收手册。面板以实际物品图标、物品名称和中英文作物名称展示总览、产物与品质、工具、作物与果树四个分页视图；每页 36 条，可切换累计/今日/本周、翻页和刷新。所有内容都是只读展示，Shift、数字键、丢弃和拖拽等操作不会取走图标。
+玩家使用 `/teastory`、`/teastory harvest` 或 `/teastory harvest menu` 打开采收手册。面板以实际物品图标、物品名称和中英文作物名称展示总览、产物与品质、工具、作物与果树四个分页视图；每页 21 条，可切换累计/今日/本周、翻页和刷新。所有内容都是只读展示，Shift、数字键、丢弃和拖拽等操作不会取走图标。
 
-`/me harvest menu <在线玩家名或UUID>` 和 `/me harvest menu all` 提供管理员查询入口，面板每次交互都重新检查查看权限。关闭面板及停用插件会清空虚拟图标，统计本身不受影响。未安装 CraftEngine 或某个内容 ID 无法解析时，用纸张及原 ID 显示回退条目。
+`/teastory harvest menu <在线玩家名或UUID>` 和 `/teastory harvest menu all` 提供管理员查询入口，面板每次交互都重新检查查看权限。关闭面板及停用插件会清空虚拟图标，统计本身不受影响。未安装 CraftEngine 或某个内容 ID 无法解析时，用纸张及原 ID 显示回退条目。
 
 ### 种子袋（2.6.0-SNAPSHOT）
 
-CGAP-RESOURCE `0.18.47` 新增 `cgap:seed_pouch`，由 3 皮革、1 线和 1 蓝色染料合成。手持右键或 `/me harvest pouch` 打开种子袋；点击背包种子存入，点击袋中种子取出，右键每次转移 1 个，底栏可一键存入或取出。背包放不下的种子留在袋中。
+CGAP-RESOURCE `0.18.47` 新增 `cgap:seed_pouch`，由 3 皮革、1 线和 1 蓝色染料合成。手持右键或 `/teastory harvest pouch` 打开种子袋；点击背包种子存入，点击袋中种子取出，右键每次转移 1 个，底栏可一键存入或取出。背包放不下的种子留在袋中。
 
 `harvest-tools.seed-pouch` 配置开关、物品 ID 与 9/18/27 格容量，每格保留种子的原始堆叠上限和完整元数据。只接收 `definitions/tools/sickle.yml` 的 `crops` 声明的种子，禁止套袋。内容保存在实体物品的 PDC 中，随物品转移和保存；缩小容量不会裁掉已有物品。每次操作立即保存，GUI 仅作展示，损坏或堆叠的袋子拒绝修改；旧 `materiaengine` 命名空间的袋子数据会在读写时兼容迁移。
 
